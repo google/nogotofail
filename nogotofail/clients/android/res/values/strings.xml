@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2014 Google Inc. All Rights Reserved.
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="app_name">nogotofail</string>
+    <string name="socket_service_name">MiTM server connection</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="settings_activity_title">Settings</string>
+
+    <string name="action_send_feedback">Send feedback</string>
+    <string name="reconnect_button">Reconnect</string>
+
+    <string name="button_whitelist">Allow</string>
+    <string name="button_blacklist">Deny</string>
+
+    <!-- Text of the notification displayed (on older platforms) when the app is running. -->
+    <string name="foreground_service_notification">nogotofail client running</string>
+
+    <string name="whitelist_title">Allow connection to MiTM server?</string>
+    <string name="whitelist_message">
+    Server\'s key fingerprint: <xliff:g id="fingerprint" example="00:00:00:00:00:00">%1$s</xliff:g>
+    </string>
+    <!-- Ticker of the notification displayed when the MiTM server presents an unknown TLS/SSL
+         certificate and the user needs to decide whether to accept it. -->
+    <string name="whitelist_notification_ticker">Unknown certificate presented by MiTM server</string>
+    <!-- Title of the notification displayed when the MiTM server presents an unknown TLS/SSL
+         certificate and the user needs to decide whether to accept it. -->
+    <string name="whitelist_notification_title">Untrusted MiTM server</string>
+    <!-- Main body of the notification displayed when the MiTM server presents an unknown TLS/SSL
+         certificate and the user needs to decide whether to accept it. -->
+    <string name="whitelist_notification_text">Touch for details.</string>
+    <!-- Title of the Activity displayed to the user when the MiTM server presents an unknown
+         TLS/SSL certificate and the user needs to decide whether to accept it. -->
+    <string name="whitelist_activity_title">Untrusted MiTM server</string>
+
+    <!-- Ticker of the notification displayed when network traffic of an app is found vulnerable -->
+    <string name ="vuln_detected_notification_ticker">
+        <xliff:g id="vulnerability" example="Heartbleed">%3$s</xliff:g> in
+        network traffic of <xliff:g id="app_list" example="nogotofail">%1$s</xliff:g> to
+        <xliff:g id="destination" example="accounts.google.com:443">%2$s</xliff:g>
+    </string>
+    <!-- Title of the notification displayed when network traffic of an app is found vulnerable -->
+    <string name ="vuln_detected_notification_title">Network traffic vulnerable</string>
+    <!-- Main body of the notification displayed when network traffic of an app is found vulnerable -->
+    <string name ="vuln_detected_notification_text">
+        <xliff:g id="vulnerability" example="Client-side Heartbleed">%3$s</xliff:g> in
+        <xliff:g id="app_list" example="nogotofail">%1$s</xliff:g> connection to
+        <xliff:g id="destination" example="accounts.google.com:443">%2$s</xliff:g>
+    </string>
+    <!-- Title of the "mute notifications" action on the notification diplayed when network traffic
+         of an app is found vulnerable. The action is to mute future notifications for the apps
+         listed in this notification. -->
+    <string name="vuln_detected_notification_action_mute">Mute</string>
+    <!-- Toast displayed when the user successfully mutes notifications for one or more apps. -->
+    <string name="vuln_detected_notification_action_mute_toast">Muted</string>
+
+    <!-- Vulnearbility: Man-in-The-Middle (MiTM) due to client accepting TLS/SSL communications with an anonymous/unauthenticated server. -->
+    <string name="vuln_anonserver">MiTM via anonymous TLS server</string>
+    <!-- Vulnerability: Client-side Heartbleed -->
+    <string name="vuln_clientheartbleed">Client-side Heartbleed</string>
+    <!-- Vulnerability: IMAP STARTTLS strip -->
+    <string name="vuln_imapstarttlsstrip">Downgrade of STARTTLS-protected IMAP to cleartext</string>
+    <!-- Vulnerability: Man-in-The-Middle (MiTM) by presenting an SSL certificate for another hostname -->
+    <string name="vuln_invalidhostname">MiTM via SSL cert for another hostname</string>
+    <!-- Vulnerability: Man-in-The-Middle (MiTM) by presenting an SSL certificate which should not normally be trusted -->
+    <string name="vuln_selfsigned">MiTM via untrusted SSL cert</string>
+    <!-- Vulnerability: Authentication credentials transmitted in cleartext -->
+    <string name="vuln_cleartextauth">Cleartext authentication credentials</string>
+    <!-- Vulnerability: arbitrary remote code execution via WebView JavaScript to Java bridge -->
+    <string name="vuln_webviewjsrce">Remote code execution via WebView JavaScript bridge</string>
+    <!-- Vulnerability: Man-in-The-Middle (MiTM) via early ChangeCipherSpec record injected to client in TLS/SSL handshake -->
+    <string name="vuln_clientearlyccs">MiTM via client-side early CCS in TLS handshake</string>
+    <!-- Vulnerability: Cleartext HTTP -->
+    <string name="vuln_http">Cleartext HTTP</string>
+    <!-- Vulnerability: SMTP STARTTLS strip -->
+    <string name="vuln_smtpstarttlsstrip">Downgrade of STARTTLS-protected SMTP to cleartext</string>
+    <!-- Vulnerability: SSL strip -->
+    <string name="vuln_sslstrip">Downgrade of HTTPS to HTTP</string>
+    <!-- Vulnerability: XMPP STARTTLS strip -->
+    <string name="vuln_xmppstarttlsstrip">Downgrade of STARTTLS-protected XMPP to cleartext</string>
+
+    <string name="notifications_pref_screen_title">Notifications</string>
+    <string name="vuln_notifications_enabled_pref_title">Notifications</string>
+    <string name="vuln_notifications_enabled_pref_summary">Notify about detected vulnerabilities</string>
+    <string name="vuln_notification_ringtone_pref_title">Ringtone</string>
+    <string name="notification_ringtone_silent">Silent</string>
+    <string name="vuln_notification_vibrate_pref_title">Vibrate</string>
+    <string name="vuln_notification_muted_apps_pref_category_title">Muted apps</string>
+
+    <!-- Title of the dialog which displays which vulnerability notifications are muted for the selected app -->
+    <string name="muted_vulns_dialog_title">
+        Muted notifications for <xliff:g id="app" example="Google Authenticator">%1$s</xliff:g>
+    </string>
+
+
+    <string name="attacks_pref_screen_title">Attacks</string>
+    <string name="attack_probability_pref_title">Probability of attack</string>
+    <string name="attacks_use_custom_set_pref_title">Custom list of attacks</string>
+    <string name="tls_attacks_set_pref_category_title">TLS attacks</string>
+    <string name="other_attacks_set_pref_category_title">Other attacks</string>
+
+    <string name="attack_title_anonserver">TLS MiTM using an anonymous server</string>
+    <string name="attack_summary_anonserver">TLS MiTM using an anonymous/unauthenticated server</string>
+    <string name="attack_title_blockhttp">Block cleartext HTTP</string>
+    <string name="attack_summary_blockhttp">Connection is closed as soon as cleartext HTTP request is detected</string>
+    <string name="attack_title_clientheartbleed">Client Heartbleed</string>
+    <string name="attack_summary_clientheartbleed">TLS client memory leak via Heartbeat</string>
+    <string name="attack_title_disablecdcpencryption">Disable Chrome Data Compression Proxy traffic encryption</string>
+    <string name="attack_summary_disablecdcpencryption">Force cleartext for traffic via Chrome Data Compression Proxy</string>
+    <string name="attack_title_dropssl">Reject TLS/SSL handshake</string>
+    <string name="attack_summary_dropssl">TLS/SSL handshake is rejected and connection is closed</string>
+    <string name="attack_title_droptls">Reject TLS handshake</string>
+    <string name="attack_summary_droptls">TLS handshake is rejected and connection is closed. SSLv3 is passed through.</string>
+    <string name="attack_title_earlyccs">Early CCS</string>
+    <string name="attack_summary_earlyccs">TLS MiTM using early ChangeCipherSpec injection</string>
+    <string name="attack_title_httpauthdetection">HTTP auth token stealing</string>
+    <string name="attack_summary_httpauthdetection">HTTP credentials/auth token compromise</string>
+    <string name="attack_title_httpdetection">Cleartext HTTP tampering</string>
+    <string name="attack_summary_httpdetection">Tampering with and eavesdropping on cleartext HTTP</string>
+    <string name="attack_title_imagereplace">Cleartext image defacement</string>
+    <string name="attack_summary_imagereplace">Defacement of cleartext image responses</string>
+    <string name="attack_title_imapauthdetection">IMAP auth credentials stealing</string>
+    <string name="attack_summary_imapauthdetection">IMAP credentials/auth token compromise</string>
+    <string name="attack_title_imapstarttlsstrip">IMAP STARTTLS strip</string>
+    <string name="attack_summary_imapstarttlsstrip">Downgrade of STARTTLS-protected IMAP to cleartext</string>
+    <string name="attack_title_invalidhostname">TLS cert for wrong hostname</string>
+    <string name="attack_summary_invalidhostname">TLS MiTM using certificate for wrong hostname</string>
+    <string name="attack_title_selfsigned">Self-signed TLS cert</string>
+    <string name="attack_summary_selfsigned">TLS MiTM using an untrusted self-signed certificate</string>
+    <string name="attack_title_sslstrip">SSL strip</string>
+    <string name="attack_summary_sslstrip">Downgrade of HTTPS to HTTP in cleartext HTTP responses</string>
+    <string name="attack_title_rawlogger">Raw traffic logging</string>
+    <string name="attack_summary_rawlogger">Log raw traffic on the nogotofail server</string>
+    <string name="attack_title_androidwebviewjsrce">Android WebView JavaScript bridge RCE</string>
+    <string name="attack_summary_androidwebviewjsrce">Remote code execution via Android WebView JavaScript bridge</string>
+    <string name="attack_title_smtpauthdetection">SMTP auth credentials stealing</string>
+    <string name="attack_summary_smtpauthdetection">SMTP credentials/auth token compromise</string>
+    <string name="attack_title_smtpstarttlsstrip">SMTP STARTTLS strip</string>
+    <string name="attack_summary_smtpstarttlsstrip">Downgrade of STARTTLS-protected SMTP to cleartext</string>
+    <string name="attack_title_xmppauthdetection">XMPP auth credentials stealing</string>
+    <string name="attack_summary_xmppauthdetection">XMPP credentials/auth token compromise</string>
+    <string name="attack_title_xmppstarttlsstrip">XMPP STARTTLS strip</string>
+    <string name="attack_summary_xmppstarttlsstrip">Downgrade of STARTTLS-protected XMPP to cleartext</string>
+
+    <string name="advanced_pref_screen_title">Advanced</string>
+
+    <string name="mitm_server_pref_category_title">MiTM controller</string>
+    <string name="mitm_server_host_pref_title">Host</string>
+    <string name="mitm_server_port_pref_title">Port</string>
+    <string name="mitm_server_port_invalid_alert">Port must be between 1 and 65535</string>
+    <string name="mitm_server_revoke_auth_pref_title">Revoke authorizations</string>
+    <string name="mitm_server_revoke_auth_prompt_message">
+        Discard all whitelisted and blacklisted MiTM controller SSL certificates?
+    </string>
+    <string name="mitm_server_revoke_auth_prompt_positive_action">Discard</string>
+
+    <string name="install_id_pref_category_title">Installation ID</string>
+    <string name="install_id_display_pref_title">Your installation ID</string>
+    <string name="install_id_reset_pref_title">Reset installation ID</string>
+    <string name="install_id_copied_to_clipboard_toast">Installation ID copied to clipboard</string>
+</resources>

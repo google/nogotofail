@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2014 Google Inc. All Rights Reserved.
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<resources>
+    <string name="vuln_notifications_enabled_pref_key" translatable="false">vuln_notifications_enabled</string>
+    <bool name="vuln_notifications_enabled_pref_default_value" translatable="false">true</bool>
+    <string name="vuln_notification_ringtone_pref_key" translatable="false">vuln_notification_ringtone</string>
+    <string name="vuln_notification_vibrate_pref_key" translatable="false">vuln_notification_vibrate</string>
+    <bool name="vuln_notification_vibrate_pref_default_value" translatable="false">true</bool>
+    <string name="vuln_notification_muted_apps_pref_category_key" translatable="false">vuln_notifications_muted_apps_pref_category</string>
+
+    <string name="attack_probability_pref_key">attack_probability</string>
+    <string name="attack_probability_pref_default_value"></string>
+
+    <!-- User-visible list of choices for the attack probability preference. -->
+    <string-array name="attack_probability_pref_entries">
+      <item>Default</item>
+      <item>0%</item>
+      <item>1%</item>
+      <item>2%</item>
+      <item>5%</item>
+      <item>10%</item>
+      <item>20%</item>
+      <item>25%</item>
+      <item>33%</item>
+      <item>50%</item>
+      <item>75%</item>
+      <item>90%</item>
+      <item>100%</item>
+    </string-array>
+
+    <!-- Machine-readable values of choices used internally by the attack probability preference.
+         -->
+    <string-array name="attack_probability_pref_entryValues">
+      <item></item>
+      <item>0</item>
+      <item>1</item>
+      <item>2</item>
+      <item>5</item>
+      <item>10</item>
+      <item>20</item>
+      <item>25</item>
+      <item>33</item>
+      <item>50</item>
+      <item>75</item>
+      <item>90</item>
+      <item>100</item>
+    </string-array>
+
+    <string name="attacks_use_custom_set_pref_key">attacks_use_custom_set</string>
+    <bool name="attacks_use_custom_set_pref_default_value">false</bool>
+    <string name="tls_attacks_set_pref_category_key">tls_attacks_set_pref_category</string>
+    <string name="other_attacks_set_pref_category_key">other_attacks_set_pref_category</string>
+
+    <string name="mitm_server_revoke_auth_pref_key">mitm_server_revoke_auth</string>
+    <string name="mitm_server_host_pref_key">mitm_server_host</string>
+    <string name="mitm_server_host_pref_default_value">mitm.nogotofail.</string>
+    <string name="mitm_server_port_pref_key">mitm_server_port</string>
+    <string name="mitm_server_port_pref_default_value">8443</string>
+    <string name="install_id_pref_key">install_id</string>
+    <string name="install_id_display_pref_key">install_id_display</string>
+    <string name="install_id_reset_pref_key">install_id_reset</string>
+</resources>

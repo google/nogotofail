@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2014 Google Inc. All Rights Reserved.
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="net.nogotofail"
+    android:versionCode="89"
+    android:versionName="0.89" >
+
+    <uses-sdk
+        android:minSdkVersion="14"
+        android:targetSdkVersion="21" />
+
+    <!-- Needed to query data connectivity state. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Needed to communicate with the MiTM server. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Needed to vibrate during notifications on older platforms. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <application
+        android:name=".NoGotoFailApplication"
+        android:allowBackup="true"
+        android:label="@string/app_name"
+        android:icon="@drawable/ic_launcher">
+        <activity
+            android:name=".StatusActivity"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".SettingsActivity"
+              android:label="@string/settings_activity_title" />
+
+        <activity android:name=".CertWhitelistPromptActivity"
+            android:exported="false"
+            android:label="@string/whitelist_activity_title"
+            android:theme="@style/MyTheme.Translucent.NoTitleBar"/>
+
+        <service android:name=".RouterSocketService"
+            android:exported="false"
+            android:label="@string/socket_service_name" />
+        <receiver android:name=".RouterSocketService$BroadcastListener">
+            <intent-filter>
+                <!-- This app/package was updated. -->
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <!-- The state of data network connectivity has changed. -->
+                <action android:name="android.net.conn.CONNECTIVITY_CHANGE"/>
+            </intent-filter>
+        </receiver>
+        <receiver android:name=".MuteNotificationsReceiver"
+            android:exported="false" />
+    </application>
+
+</manifest>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2014 Google Inc. All Rights Reserved.
+
+     Licensed under the Apache License, Version 2.0 (the "License");
+     you may not use this file except in compliance with the License.
+     You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+     Unless required by applicable law or agreed to in writing, software
+     distributed under the License is distributed on an "AS IS" BASIS,
+     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+     See the License for the specific language governing permissions and
+     limitations under the License.
+-->
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+    <PreferenceCategory
+        android:title="@string/mitm_server_pref_category_title"
+        >
+        <EditTextPreference
+            android:key="@string/mitm_server_host_pref_key"
+            android:title="@string/mitm_server_host_pref_title"
+            android:defaultValue="@string/mitm_server_host_pref_default_value"
+            />
+        <EditTextPreference
+            android:key="@string/mitm_server_port_pref_key"
+            android:title="@string/mitm_server_port_pref_title"
+            android:defaultValue="@string/mitm_server_port_pref_default_value"
+            />
+        <Preference
+            android:key="@string/mitm_server_revoke_auth_pref_key"
+            android:title="@string/mitm_server_revoke_auth_pref_title"
+            android:persistent="false"
+            />
+    </PreferenceCategory>
+    <PreferenceCategory
+        android:title="@string/install_id_pref_category_title"
+        >
+        <Preference
+            android:key="@string/install_id_display_pref_key"
+            android:title="@string/install_id_display_pref_title"
+            />
+        <Preference
+            android:key="@string/install_id_reset_pref_key"
+            android:title="@string/install_id_reset_pref_title"
+            />
+    </PreferenceCategory>
+</PreferenceScreen>
