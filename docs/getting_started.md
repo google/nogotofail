@@ -202,7 +202,7 @@ Our main setup has been OpenVPN running on a Google Compute Engine instance.
 
 
 ####Testing Android
-For testing Android devices we have included our [Android client](nogotofail/clients/android) ready
+For testing Android devices we have included our [Android client](/nogotofail/clients/android) ready
 to be imported into Eclipse. You will have to build the app and install it on your test device.
 
 For testing you can use the access point nogotofail setups or on  devices >=JB you can use
