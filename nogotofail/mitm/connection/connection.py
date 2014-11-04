@@ -117,6 +117,8 @@ class BaseConnection(object):
         data_handler_classes = data_handler_selector(self, app_blame)
         self.data_handlers = [handler_class(self)
                               for handler_class in data_handler_classes]
+        self.client_bridge_fn = BaseConnection._bridge_client
+        self.server_bridge_fn = BaseConnection._bridge_server
 
     @staticmethod
     def setup_server_socket(sock):
@@ -238,9 +240,9 @@ class BaseConnection(object):
         """
         self.last_used = time.time()
         if (sock == self.client_socket):
-            return self._bridge_client()
+            return self.client_bridge_fn(self)
         else:
-            return self._bridge_server()
+            return self.server_bridge_fn(self)
 
     def close(self, handler_initiated=True):
         """Close the connection. Does nothing if the connection is already closed.
