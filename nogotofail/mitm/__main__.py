@@ -235,7 +235,7 @@ modes = {
             "Listen as a SOCKS server to route traffic"),
         }
 
-default_mode = "redirect"
+default_mode = "tproxy"
 
 
 def parse_args():
