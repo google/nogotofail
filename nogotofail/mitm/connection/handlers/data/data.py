@@ -15,6 +15,7 @@ limitations under the License.
 '''
 import logging
 from nogotofail.mitm.connection.handlers import base
+from nogotofail.mitm.event import connection
 
 
 class DataHandler(base.BaseHandler):
@@ -37,6 +38,13 @@ class DataHandler(base.BaseHandler):
 
     def log_event(self, level, event):
         self.event_logger.log(level, event.dumps())
+
+    def log_attack_event(self, data=None, success=True):
+        self.log_event(
+            logging.ERROR,
+            connection.AttackEvent(
+                self.connection, self.name, success,
+                data))
 
     @property
     def applications_str(self):
