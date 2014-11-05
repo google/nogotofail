@@ -308,6 +308,10 @@ class BaseConnection(object):
 
         # Check if we should start mitming this connection
         should_mitm = self.handler.on_ssl(client_hello)
+        # Call all the data handler's on_ssl so they can do any analysis they
+        # need.
+        for handler in self.data_handlers:
+            handler.on_ssl(client_hello)
         if should_mitm:
             self.connect_ssl(client_hello)
             return True
