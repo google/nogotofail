@@ -18,7 +18,6 @@ import textwrap
 
 from nogotofail.mitm.connection.handlers import base
 from nogotofail.mitm.event import connection
-from nogotofail.mitm.util import ssl2
 
 
 class LoggingHandler(base.BaseConnectionHandler):
@@ -85,11 +84,6 @@ class LoggingHandler(base.BaseConnectionHandler):
 
     def on_ssl(self, client_hello):
         self.log(logging.DEBUG, "SSL starting")
-        if any(("_anon_" in str(c) for c in client_hello.ciphers)):
-            self.log(logging.WARNING,
-                "Client enabled anonymous TLS/SSL cipher suites")
-        if isinstance(client_hello, ssl2.types.ClientHello):
-            self.log(logging.WARNING, "Client enabled SSLv2 protocol")
 
     def on_ssl_establish(self):
         self.log(logging.INFO, "SSL connection established")
