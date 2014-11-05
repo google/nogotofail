@@ -17,3 +17,6 @@ machines and the transparent traffic capture modes are Linux specific and requir
 
 ##Getting started
 See [docs/getting_started.md](docs/getting_started.md) for setup and a walkthrough of nogotofail.
+
+##Discussion
+For discussion please use our [nogotofail Google Group](https://groups.google.com/forum/#!forum/nogotofail).
