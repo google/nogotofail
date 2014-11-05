@@ -48,7 +48,7 @@ class BlameConnection(object):
 
     def __init__(self, host, port, ssl=True, fingerprint_callback=None,
             install_id=None, platform_info="Unix", probability=None,
-            override_attacks=False, attacks=None, data_attacks=None,
+            attacks=None, data_attacks=None,
             vuln_callback=None, info_callback=None):
         self.host = host
         self.port = port
@@ -57,9 +57,8 @@ class BlameConnection(object):
         self.install_id = install_id or uuid.uuid4()
         self.platform_info = platform_info
         self.probability = probability
-        self.override_attacks = override_attacks
-        self.attacks = attacks or []
-        self.data_attacks = data_attacks or []
+        self.attacks = attacks
+        self.data_attacks = data_attacks
         self.vuln_callback = vuln_callback
         self.info_callback = info_callback
         self.logger = logging.getLogger("pyblame")
@@ -70,11 +69,12 @@ class BlameConnection(object):
         headers = {}
         headers["Installation-ID"] = self.install_id
         headers["Platform-Info"] = self.platform_info
-        if self.override_attacks:
+        if self.attacks is not None:
             headers["Attacks"] = ",".join(self.attacks)
+        if self.data_attacks is not None:
             headers["Data-Attacks"] = ",".join(self.data_attacks)
-        if self.probability:
-            headers["Probability"] = self.probability
+        if self.probability is not None:
+            headers["Attack-Probability"] = self.probability
         return headers
 
     def handshake(self):

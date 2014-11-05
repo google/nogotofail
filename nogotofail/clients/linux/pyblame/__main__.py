@@ -173,7 +173,6 @@ def main():
             install_id=config.get("ids", "device"),
             platform_info=config.get("ids", "platform"),
             probability=args.probability,
-            override_attacks=args.attacks is not None or args.data is not None,
             attacks=args.attacks,
             data_attacks=args.data,
             vuln_callback=vulnerability_callback,
