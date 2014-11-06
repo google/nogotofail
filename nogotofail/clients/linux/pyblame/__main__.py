@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 from nogotofail.clients.linux import pyblame
+from platform import uname
 import uuid
 import argparse
 import subprocess
@@ -165,7 +166,8 @@ def main():
     if args.platform:
         config.set("ids", "platform", args.platform)
     elif not config.has_option("ids", "platform"):
-        platform = subprocess.check_output(["uname", "-o", "-s", "-r", "-v"])
+        _system, _node, _rel, _version, _machine, _processor = uname()
+        platform = ' '.join((_system, _rel, _version, _machine, _processor))
         config.set("ids", "platform", platform)
     blame_connection = pyblame.BlameConnection(args.host, args.port,
             ssl=not args.nossl,
