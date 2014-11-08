@@ -580,7 +580,7 @@ class SocksConnection(BaseConnection):
             addr = socket.inet_ntop(socket.AF_INET, addr)
             port = struct.unpack_from("!H", request, 8)[0]
         elif atype == SocksConnection.ATYPE_DNS:
-            length = struct.unpack_from("B", request, 4)
+            length = struct.unpack_from("B", request, 4)[0]
             addr = request[5:5 + length]
             port = struct.unpack_from("!H", request, 5 + length)[0]
         elif atype == SocksConnection.ATYPE_IP6:
