@@ -15,6 +15,8 @@ See [docs/design.md](docs/design.md) for the overview and design goals of nogoto
 Nogotofail depends only on Python 2.7 and pyOpenSSL>=0.13. The MiTM is designed to work on Linux
 machines and the transparent traffic capture modes are Linux specific and require iptables as well.
 
+Additionally the Linux client depends on [psutil](https://pypi.python.org/pypi/psutil).
+
 ##Getting started
 See [docs/getting_started.md](docs/getting_started.md) for setup and a walkthrough of nogotofail.
 

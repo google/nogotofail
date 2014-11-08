@@ -17,6 +17,7 @@ from nogotofail.clients.linux import pyblame
 from platform import uname
 import uuid
 import argparse
+import psutil
 import subprocess
 try:
     import configparser
@@ -125,17 +126,22 @@ def client_info_callback(source_port, dest_ip, dest_port):
     for the connection or None if no owner can be found.
     """
     try:
-        inode = pyblame.util.find_connection_inode((None, source_port), (dest_ip, dest_port))
-        pid = pyblame.util.find_socket_pid(inode)
-        cmdline = pyblame.util.get_pid_cmdline(pid)
-        cmds = cmdline.split("\x00")
+        proc = pyblame.util.find_connection_owner((None, source_port),
+                (dest_ip, dest_port),
+                relaxed=True)
+        # API for cmdline changed in psutil 2.0.0, no reason to require >=2.0.0
+        # so just work around it.
+        if psutil.version_info[0] < 2:
+            cmdline = proc.cmdline
+        else:
+            cmdline = proc.cmdline()
         # Use the exe and argv[1] to get a good idea of the program.
         # This handles the python case where argv[0] is python and argv[1] is
         # the script.
-        cmd = " ".join(cmds[:2])
+        cmd = " ".join(cmdline[:2])
 
         logger.info("Blame request for %s=>%s:%s owner:%s command:%s"
-                % (source_port, dest_ip, dest_port, pid, cmd))
+                % (source_port, dest_ip, dest_port, proc.pid, cmd))
         # TODO: Return a meaningful version code?
         return [pyblame.blame.Application(cmd, 0)]
 
