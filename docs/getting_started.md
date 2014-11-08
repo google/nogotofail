@@ -198,7 +198,8 @@ it you can use WiFi to connect the clients, but that requires your WiFi driver t
 nogotofail.mitm on a VPN server, and have the clients connect over the VPN. This
 is less transparent to the client but usually easier to set up. We recommend
 OpenVPN as there is lots of documentation for how to set up an OpenVPN server.
-Our main setup has been OpenVPN running on a Google Compute Engine instance.
+Our main setup has been OpenVPN running on a Google Compute Engine instance. See instructions in
+[gce/readme.md](gce/readme.md).
 
 
 ####Testing Android

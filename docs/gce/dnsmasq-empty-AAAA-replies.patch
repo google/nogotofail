@@ -1,0 +1,14 @@
+diff -ur dnsmasq-2.69-original/src/rfc1035.c dnsmasq-2.69/src/rfc1035.c
+--- dnsmasq-2.69-original/src/rfc1035.c	2014-04-09 19:36:53.000000000 +0000
++++ dnsmasq-2.69/src/rfc1035.c	2014-04-30 17:40:38.928902531 +0000
+@@ -1944,6 +1944,10 @@
+ 		}
+ 
+ 	    cname_restart:
++	      if (qtype == T_AAAA) {
++	        my_syslog(LOG_INFO, "*** answer_request: Responding with 0 records to AAAA query");
++	        ans = 1;
++	      } else
+ 	      if ((crecp = cache_find_by_name(NULL, name, now, flag | F_CNAME | (dryrun ? F_NO_RR : 0))))
+ 		{
+ 		  int localise = 0;

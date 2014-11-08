@@ -1,0 +1,16 @@
+proto udp
+
+client
+verb 4
+dev tun
+tun-ipv6
+redirect-gateway
+
+# keepalive 60 120
+ping 60
+ping-restart 120
+ping-timer-rem
+persist-tun
+persist-key
+
+comp-lzo
