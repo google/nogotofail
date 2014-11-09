@@ -1,8 +1,8 @@
-#Nogotofail MiTM on Google Cloud Engine VM instance
+#Nogotofail MiTM on Google Compute Engine VM instance
 
 ## Overview
 In this setup, traffic from clients to be MiTM'd is routed through a Google
-Cloud Engine (GCE) VM instance to the Internet. Nogotofail MiTM is running
+Compute Engine (GCE) VM instance to the Internet. Nogotofail MiTM is running
 on the GCE instance and is MiTMing the traffic. Clients route their traffic
 to the GCE instance via OpenVPN.
 
