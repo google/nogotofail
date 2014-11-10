@@ -14,7 +14,7 @@ fingerprint and asked if the server should be trusted.
 
 For example the OpenSSL command to generate such a certificate is:
 
-    $ openssl req -x509 -newkey rsa:2048 -subj "/CN=mitm.nogotofail/" -nodes -keyout server.crt -out server.crt
+    $ openssl req -x509 -newkey rsa:2048 -sha256 -subj "/CN=mitm.nogotofail/" -nodes -keyout server.crt -out server.crt
 
 ###Invalid Hostname Certificate
 
