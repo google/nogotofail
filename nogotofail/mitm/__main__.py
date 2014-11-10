@@ -32,7 +32,7 @@ import sys
 from nogotofail.mitm.connection import Server, RedirectConnection, SocksConnection, TproxyConnection
 from nogotofail.mitm.blame import Server as AppBlameServer
 from nogotofail.mitm.connection import handlers
-from nogotofail.mitm.util import get_interface_addresses
+from nogotofail.mitm.util import routing
 
 LOG_FORMAT = logging.Formatter("%(asctime)-15s [%(levelname)s] %(message)s")
 EVENT_FORMAT = logging.Formatter("%(message)s")
@@ -98,134 +98,23 @@ def build_server(port, blame, selector, ssl_selector, data_selector, block, ipv6
 def build_blame(cert, probability, attacks, data_attacks):
     return AppBlameServer(8443, cert, probability, attacks, data_attacks)
 
-# Below are the rules for setting up/tearing down iptables and ip rules for
-# geting traffic to nogotofail.mitm. TODO: Clean this up, it is really ugly right now.
-
-def set_tproxy_iprules(enable=True, ipv6=False, log=True, mark=100):
-    table_cmd = "ip %s route %s local default dev lo table %d"
-    rule_cmd = "ip %s rule %s fwmark %d table %d"
-    ip_action = "add" if enable else "del"
-
-    commands = [table_cmd % ("-4", ip_action, mark)]
-    commands += [rule_cmd % ("-4", ip_action, mark, mark)]
-    if ipv6:
-        commands += [table_cmd % ("-6", ip_action, mark)]
-        commands += [rule_cmd % ("-6", ip_action, mark, mark)]
-    executed = []
-    try:
-        for command in commands:
-            _ = subprocess.check_output(
-                command, stderr=subprocess.STDOUT, shell=True)
-            executed.append(command)
-    except Exception:
-        # Undo any rules we added
-        if enable:
-            for command in executed:
-                try:
-                    _ = subprocess.check_output(
-                        command.replace("add", "del"),
-                        stderr=subprocess.STDOUT, shell=True)
-                except:
-                    pass
-        if log:
-            logger.warning("Failed to execute ip command")
-        return
-    if enable:
-        atexit.register(set_tproxy_iprules, enable=False, ipv6=ipv6, mark=mark, log=False)
-
-def set_tproxy_rules(args, enable=True, log=True, mark=100):
-    """Setup iptables tproxy rules to redirect traffic to nogotofail.mitm."""
+def set_redirect_rules(args):
     port = args.port
     ipv6 = args.ipv6
+    routing.enable_redirect_rules(port, ipv6=ipv6)
+    atexit.register(routing.disable_redirect_rules, port, ipv6=ipv6)
 
-    set_tproxy_iprules(enable, ipv6, log, mark)
-
-    command_v4 = "iptables"
-    command_v6 = "ip6tables"
-    return_cmd = "%s -t mangle %s PREROUTING -p tcp -m socket --jump RETURN"
-    return_cmd2 = "%s -t mangle %s PREROUTING -p tcp -d %s --jump RETURN"
-    redirect_cmd = "%s -t mangle %s PREROUTING -p tcp -j TPROXY --tproxy-mark %d --on-port %d"
-
-    action = "-A" if enable else "-D"
-    v4_addrs, v6_addrs = get_interface_addresses()
-
-    commands = [return_cmd2 % (command_v4, action, v4_addr)
-                for v4_addr in v4_addrs]
-    commands += [return_cmd % (command_v4, action)]
-    if ipv6:
-        commands += [return_cmd % (command_v6, action)]
-        commands += [return_cmd2 %
-                     (command_v6, action, v6_addr) for v6_addr in v6_addrs]
-    # Generate commands to grab all other traffic
-    commands += [redirect_cmd % (command_v4, action, mark, port)]
-    if ipv6:
-        commands += [redirect_cmd % (command_v6, action, mark, port)]
-    executed = []
-    try:
-        for command in commands:
-            _ = subprocess.check_output(
-                command, stderr=subprocess.STDOUT, shell=True)
-            executed.append(command)
-    except Exception:
-        # Undo any rules we added
-        if enable:
-            for command in executed:
-                try:
-                    _ = subprocess.check_output(
-                        command.replace("-A", "-D"),
-                        stderr=subprocess.STDOUT, shell=True)
-                except:
-                    pass
-        if log:
-            logger.warning("Failed to execute iptables command")
-        return
-    if enable:
-        atexit.register(set_tproxy_rules, args, enable=False)
-
-def set_iptables_rules(args, enable=True, log=True):
-    """Setup iptables redirect rules to redirect traffic to nogotofail.mitm.
-
-    This tries and routes all traffic not destinated for a local address
-    to nogotofail.mitm. Since redirect rules can only live in PREROUTING we have
-    to do a best guess at what is through traffic ourselves.
-    """
+def set_tproxy_rules(args):
     port = args.port
     ipv6 = args.ipv6
-
-    command_v4 = "iptables"
-    command_v6 = "ip6tables"
-    return_cmd = "%s -t nat %s PREROUTING -p tcp -d %s --jump RETURN"
-    redirect_cmd = "%s -t nat %s PREROUTING -p tcp -j REDIRECT --to-ports %s"
-    action = "-A" if enable else "-D"
-    v4_addrs, v6_addrs = get_interface_addresses()
-    # Generate iptables commands for skipping traffic bound for this device
-    commands = [return_cmd % (command_v4, action, v4_addr)
-                for v4_addr in v4_addrs]
-    if ipv6:
-        commands += [return_cmd %
-                     (command_v6, action, v6_addr) for v6_addr in v6_addrs]
-    # Generate commands to grab all other traffic
-    commands += [redirect_cmd % (command_v4, action, port)]
-    if ipv6:
-        commands += [redirect_cmd % (command_v6, action, port)]
-    executed = []
-    try:
-        for command in commands:
-            _ = subprocess.check_output(
-                command, stderr=subprocess.STDOUT, shell=True)
-            executed.append(command)
-    except Exception:
-        if log:
-            logger.warning("Failed to execute iptables command")
-        return
-    if enable:
-        atexit.register(set_iptables_rules, args, enable=False)
+    routing.enable_tproxy_rules(port, ipv6=ipv6)
+    atexit.register(routing.disable_tproxy_rules, ipv6=ipv6)
 
 # Traffic capture modes
 Mode = collections.namedtuple("Mode", ["cls", "setup", "description"])
 modes = {
         "redirect": Mode(RedirectConnection,
-            set_iptables_rules,
+            set_redirect_rules,
             "Use Iptables REDIRECT to route traffic. Ipv6 support is limited in this mode."),
         "tproxy": Mode(TproxyConnection,
             set_tproxy_rules,

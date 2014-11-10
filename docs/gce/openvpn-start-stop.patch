@@ -1,0 +1,29 @@
+--- init.d-original/openvpn	2012-02-24 12:17:04.000000000 +0000
++++ init.d/openvpn	2014-11-06 22:33:53.560764978 +0000
+@@ -81,6 +81,10 @@
+     log_progress_msg "$NAME"
+     STATUS=0
+ 
++    sysctl -w net.ipv4.ip_forward=1
++    sysctl -w net.ipv6.conf.all.disable_ipv6=0
++    iptables -t nat -A POSTROUTING -o eth0 -s 10.8.0.0/16 -j MASQUERADE
++
+     start-stop-daemon --start --quiet --oknodo \
+         --pidfile /var/run/openvpn.$NAME.pid \
+         --exec $DAEMON -- $OPTARGS --writepid /var/run/openvpn.$NAME.pid \
+@@ -93,8 +97,15 @@
+     if [ "$SAVED_DEFAULT_SEND_REDIRECTS" -ne 0 ]; then
+       sysctl -w net.ipv4.conf.default.send_redirects=$SAVED_DEFAULT_SEND_REDIRECTS > /dev/null
+     fi
++
++    iptables -A FORWARD -i tun+ -j ACCEPT
+ }
+ stop_vpn () {
++  sysctl -w net.ipv4.ip_forward=0 || true
++  sysctl -w net.ipv6.conf.all.disable_ipv6=1 || true
++  iptables -D FORWARD -i tun+ -j ACCEPT || true
++  iptables -t nat -D POSTROUTING -o eth0 -s 10.8.0.0/16 -j MASQUERADE || true
++
+   kill `cat $PIDFILE` || true
+   rm -f $PIDFILE
+   [ "$OMIT_SENDSIGS" -ne 1 ] || rm -f /run/sendsigs.omit.d/openvpn.$NAME.pid
