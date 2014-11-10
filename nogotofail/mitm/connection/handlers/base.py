@@ -85,6 +85,11 @@ class BaseHandler(object):
         """
         pass
 
+    def on_ssl(self, client_hello):
+        """Called when a TLS ClientHello is detected in the stream.
+        """
+        pass
+
 
 class BaseConnectionHandler(BaseHandler):
 
