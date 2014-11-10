@@ -70,7 +70,16 @@ class WeakTLSVersionDetectionHandler(DataHandler):
         if (isinstance(client_hello, tls.types.ClientHello) and
                 client_hello.version.major == 3 and
                 client_hello.version.minor == 0):
-            self.log(logging.WARNING, "Client enabled SSLv3 protocol")
+            # SSLv3 is still used in fallback situations and ngtf tends to cause
+            # these fallback situations so we wont notify the client of these
+            # vulns to prevent spamming. We will log if TLS_FALLBACK_SCSV is set
+            # since it should be set in fallback situations.
+            fallback = ("TLS_FALLBACK_SCSV" in
+                    [str(c) for c in client_hello.ciphers])
+            if fallback:
+                self.log(logging.WARNING,
+                        "Client enabled SSLv3 protocol with TLS_FALLBACK_SCSV")
+            else:
+                self.log(logging.ERROR,
+                        "Client enabled SSLv3 protocol without TLS_FALLBACK_SCSV")
             self.log_attack_event(data="SSLv3")
-            self.connection.vuln_notify(vuln.VULN_WEAK_TLS_VERSION)
-            return
