@@ -173,7 +173,7 @@ def main():
         config.set("ids", "platform", args.platform)
     elif not config.has_option("ids", "platform"):
         _system, _node, _rel, _version, _machine, _processor = uname()
-        platform = ' '.join((_system, _rel, _version, _machine, _processor))
+        platform = ' '.join((_system, _rel))
         config.set("ids", "platform", platform)
     blame_connection = pyblame.BlameConnection(args.host, args.port,
             ssl=not args.nossl,
