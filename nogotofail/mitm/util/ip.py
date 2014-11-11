@@ -28,6 +28,8 @@ def get_interface_addresses():
         # Couldn't call ifconfig. Best guess it.
         return (["127.0.0.1"], [])
     # Parse out the results.
-    v4 = re.findall("inet addr:([^ ]*)", output)
-    v6 = re.findall("inet6 addr: ([^ ]*)", output)
+    v4 = re.findall("inet (addr:)?([^ ]*)", output)
+    v6 = re.findall("inet6 (addr: )?([^ ]*)", output)
+    v4 = [e[1] for e in v4]
+    v6 = [e[1] for e in v6]
     return v4, v6
