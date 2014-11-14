@@ -25,9 +25,27 @@ class HandlerStore(object):
         self.default = []
         self.internal = []
 
+def handler(store, default=False, internal=False, passive=False):
+    """ Decorator for setting up a handler.
 
-def handler(store, default=False, internal=False):
+    This puts the handler into the handler store which can then be used
+    to look up all handlers and information about them such as which are default,
+    passive, etc.
+
+    Currently there are two handler stores, one for connection handlers in
+    nogotofail.mitm.connection.handlers.connection.store and one for data handlers
+    in nogotofail.mitm.connection.handlers.data.store
+
+    Arguments:
+    store -- the HandlerStore to store information about the handler in
+    default -- if the handler should be used by default
+    internal -- if the handler is used internally. These are always added and not displayed
+        in --help or sent to the client.
+    passive -- if the handler is passive and does no modification.
+    """
     def wrapper(cls):
+        cls.passive = passive
+
         if internal:
             store.internal.append(cls)
         else:
@@ -37,3 +55,43 @@ def handler(store, default=False, internal=False):
                 store.default.append(cls)
         return cls
     return wrapper
+
+def _passive_handler_func(f):
+    """ Wrapper to ignore the return value for handler methods dealing with data.
+
+    This is to make it so that passive handlers can't accidentally modify the the data.
+    """
+    def func(self, input):
+        f(self, input)
+        return input
+    return func
+
+def _passive_handler(store, **kwargs):
+    """ Decorator for setting up a passive handler.
+
+    Passive handlers should make no modifications or do any potentially destructive operations on
+    connections, they should simply do passive detection of issues.
+
+    NOTE: We currently do not do strict enforcement that passive handlers don't do anything active
+    to the connection, we do wrap the standard data handling methods to ignore the return values
+    but that is more for convenience than anything else.
+
+    Arguments:
+    All arguments are passed to handler(), see handler for argument descriptions.
+    """
+    def wrapper(cls):
+        # Wrap all the traffic methods to ignore the return values from the
+        # passive handler
+        funcs = ["on_request", "on_inject_request", "on_response",
+                 "on_inject_response"]
+        for func in funcs:
+            f = _passive_handler_func(getattr(cls, func))
+            setattr(cls, func, f)
+        # Call into the normal wrapper to set cls.passive and add it to the
+        # store.
+        return handler(store, passive=True, **kwargs)(cls)
+    return wrapper
+
+handler.passive = _passive_handler
+# Add active for symmetry, currently active is assumed to be the default.
+handler.active = handler

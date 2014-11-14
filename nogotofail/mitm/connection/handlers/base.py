@@ -18,6 +18,8 @@ class BaseHandler(object):
     # Human readable description of what this handler does.
     # Should describe things like attacks
     description = "Basic connection handler. Does nothing but bridge traffic."
+    # If the handler is passive and should do no modification
+    passive = False
 
     def __init__(self, connection):
         self.connection = connection
