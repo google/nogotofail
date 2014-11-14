@@ -176,8 +176,8 @@ def parse_args():
         "-d", "--debug", help="Print debug output", action="store_true",
         default=False)
     parser.add_argument(
-        "-a", "--all", help="MITM all clients", action="store_true",
-        default=False)
+        "-b", "--bridge", help="Bridge connections from hosts without a client",
+        action="store_false", default=True, dest="all")
     parser.add_argument(
         "-l", "--logfile", help="Log output file", action="store")
     parser.add_argument(
@@ -211,7 +211,7 @@ def parse_args():
         "--serverssl", help="Run the app blame server with SSL using PEMFILE",
         metavar="PEMFILE", action="store")
     parser.add_argument(
-        "-b", "--block", help="Block connections with unknown blame info",
+        "--block", help="Block connections with unknown blame info",
         action="store_true", default=False)
     parser.add_argument(
         "--mode", help="Traffic capture mode. Options are " + ", ".join(modes.keys()),
