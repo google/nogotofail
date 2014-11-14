@@ -63,26 +63,41 @@ def build_ssl_selector(default_ssl_handlers, prob_MITM=0.5, MITM_all=False):
         else:
             attack_prob = prob_MITM
             ssl_handlers = default_ssl_handlers
+        if not ssl_handlers:
+            return None
         if random.random() < attack_prob:
             return random.choice(ssl_handlers)
         return None
     return attack_selector
 
 
-def build_data_selector(default_handlers, MITM_all):
+def build_data_selector(default_handlers, MITM_all, prob_attack=0.5):
     internal = handlers.data.handlers.internal
 
     def data_selector(connection, app_blame):
         if not MITM_all and not app_blame.client_available(
             connection.client_addr):
             return internal + []
+        # Figure out our possible handlers
         client_info = app_blame.clients.get(connection.client_addr)
         client_info = client_info.info if client_info else None
         if client_info:
             handlers = client_info.get("Data-Attacks", default_handlers)
+            attack_prob = client_info.get("Attack-Probability", prob_attack)
         else:
             handlers = default_handlers
-        return internal + handlers
+            attack_prob = prob_attack
+
+        # Split handlers into passive/active
+        passive, active = [], []
+        for handler in handlers:
+            (active, passive)[handler.passive].append(handler)
+
+        # 1-p chance of not using any data attacks on a connection.
+        if random.random() >= attack_prob:
+            active = []
+
+        return internal + passive + active
     return data_selector
 
 
@@ -276,7 +291,7 @@ def run():
                   for name in args.attacks]
     data_cls = [handlers.data.handlers.map[name] for name in args.data]
     ssl_selector = build_ssl_selector(attack_cls, args.probability, args.all)
-    data_selector = build_data_selector(data_cls, args.all)
+    data_selector = build_data_selector(data_cls, args.all, prob_attack=args.probability)
 
     logger.info("Starting...")
     try:
