@@ -111,7 +111,7 @@ class XmppStartTlsStripHandler(DataHandler):
         return data[:start_index] + data[end_index:]
 
 
-@handler(handlers, default=True)
+@handler.passive(handlers, default=True)
 class XmppAuthHandler(DataHandler):
 
     name = "xmppauthdetection"

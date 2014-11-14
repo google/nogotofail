@@ -127,7 +127,7 @@ class SmtpStartTlsStripHandler(DataHandler):
         return request
 
 
-@handler(handlers, default=True)
+@handler.passive(handlers, default=True)
 class SmtpAuthHandler(DataHandler):
 
     name = "smtpauthdetection"

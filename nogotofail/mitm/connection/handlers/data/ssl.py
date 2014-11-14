@@ -21,7 +21,7 @@ from nogotofail.mitm.connection.handlers.store import handler
 from nogotofail.mitm.event import connection
 from nogotofail.mitm.util import ssl2, tls, vuln
 
-@handler(handlers, default=True)
+@handler.passive(handlers, default=True)
 class InsecureCipherDetectionHandler(DataHandler):
     name = "insecurecipherdetection"
     description = "Detect insecure ciphers in TLS Client Hellos"
@@ -56,7 +56,7 @@ class InsecureCipherDetectionHandler(DataHandler):
                 (", ".join(integ_ciphers)))
 
 
-@handler(handlers, default=True)
+@handler.passive(handlers, default=True)
 class WeakTLSVersionDetectionHandler(DataHandler):
     name = "weaktlsversiondetection"
     description = "Detect versions of the TLS/SSL protocols that are known to be weak"

@@ -23,7 +23,7 @@ from nogotofail.mitm.event import connection
 import re
 
 
-@handler(handlers, default=True)
+@handler.passive(handlers, default=True)
 class HttpDetectionHandler(DataHandler):
 
     name = "httpdetection"
@@ -49,7 +49,7 @@ class HttpDetectionHandler(DataHandler):
                 host + http.path))
 
 
-@handler(handlers, default=True)
+@handler.passive(handlers, default=True)
 class HttpAuthHandler(HttpDetectionHandler):
 
     name = "httpauthdetection"

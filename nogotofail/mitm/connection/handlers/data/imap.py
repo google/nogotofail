@@ -104,7 +104,7 @@ class ImapStartTlsStripHandler(DataHandler):
         return request
 
 
-@handler(handlers, default=True)
+@handler.passive(handlers, default=True)
 class ImapAuthHandler(DataHandler):
 
     name = "imapauthdetection"
