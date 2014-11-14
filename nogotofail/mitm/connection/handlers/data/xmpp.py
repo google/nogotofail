@@ -23,7 +23,7 @@ from nogotofail.mitm import util
 import re
 
 
-@handler(handlers, default=False)
+@handler(handlers)
 class XmppStartTlsStripHandler(DataHandler):
 
     name = "xmppstarttlsstrip"
@@ -111,7 +111,7 @@ class XmppStartTlsStripHandler(DataHandler):
         return data[:start_index] + data[end_index:]
 
 
-@handler.passive(handlers, default=True)
+@handler.passive(handlers)
 class XmppAuthHandler(DataHandler):
 
     name = "xmppauthdetection"

@@ -24,7 +24,7 @@ from nogotofail.mitm import util
 import re
 
 
-@handler(handlers, default=False)
+@handler(handlers)
 class SmtpStartTlsStripHandler(DataHandler):
 
     name = "smtpstarttlsstrip"
@@ -127,7 +127,7 @@ class SmtpStartTlsStripHandler(DataHandler):
         return request
 
 
-@handler.passive(handlers, default=True)
+@handler.passive(handlers)
 class SmtpAuthHandler(DataHandler):
 
     name = "smtpauthdetection"

@@ -25,7 +25,7 @@ class HandlerStore(object):
         self.default = []
         self.internal = []
 
-def handler(store, default=False, internal=False, passive=False):
+def handler(store, default=True, internal=False, passive=False):
     """ Decorator for setting up a handler.
 
     This puts the handler into the handler store which can then be used
