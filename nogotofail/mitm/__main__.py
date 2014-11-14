@@ -170,9 +170,6 @@ def parse_args():
     parser.add_argument(
         "-c", "--config", help="Configuration file", metavar="FILE")
     parser.add_argument(
-        "-v", "--verbose", help="verbose output", action="store_true",
-        default=False)
-    parser.add_argument(
         "-p", "--probability", help="probably of attacking a SSL connection",
         action="store", type=float, default=0.5)
     parser.add_argument(
@@ -189,7 +186,7 @@ def parse_args():
         "-t", "--trafficfile", help="Traffic output file", action="store")
     parser.add_argument(
         "-q", "--quiet",
-        help="Quiet output. Only prints MITM success messages",
+        help="Quiet output. Only prints important messages.",
         action="store_true", default=False)
     parser.add_argument(
         "--port", help="Port to bind the connection to", action="store",
@@ -236,12 +233,10 @@ def setup_logging(args):
     handler.setFormatter(LOG_FORMAT)
     if args.debug:
         handler.setLevel(logging.DEBUG)
-    elif args.verbose:
-        handler.setLevel(logging.INFO)
     elif args.quiet:
-        handler.setLevel(logging.CRITICAL)
-    else:
         handler.setLevel(logging.WARNING)
+    else:
+        handler.setLevel(logging.INFO)
     logger.addHandler(handler)
 
     if args.logfile:
