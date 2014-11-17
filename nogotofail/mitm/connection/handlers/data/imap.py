@@ -23,7 +23,7 @@ from nogotofail.mitm import util
 import re
 
 
-@handler(handlers, default=False)
+@handler(handlers)
 class ImapStartTlsStripHandler(DataHandler):
 
     name = "imapstarttlsstrip"
@@ -104,7 +104,7 @@ class ImapStartTlsStripHandler(DataHandler):
         return request
 
 
-@handler(handlers, default=True)
+@handler.passive(handlers)
 class ImapAuthHandler(DataHandler):
 
     name = "imapauthdetection"
