@@ -22,7 +22,7 @@ import re
 import shlex
 
 
-@handler(handlers, default=True)
+@handler.passive(handlers, default=False)
 class CustomRequestDetection(DataHandler):
     """Looks for messages specified by the client(in the blame handshake) in requests.
 

@@ -188,8 +188,6 @@ class Server:
             client_info["Attacks"] = [
                 handlers.connection.handlers.map[attack] for attack in attacks
                 if attack in handlers.connection.handlers.map]
-            if len(client_info["Attacks"]) == 0:
-                client_info["Attack-Probability"] = 0
 
         if "Data-Attacks" in headers:
             attacks = headers["Data-Attacks"].split(",")

@@ -23,7 +23,7 @@ from nogotofail.mitm.event import connection
 import re
 
 
-@handler(handlers, default=True)
+@handler.passive(handlers)
 class HttpDetectionHandler(DataHandler):
 
     name = "httpdetection"
@@ -49,7 +49,7 @@ class HttpDetectionHandler(DataHandler):
                 host + http.path))
 
 
-@handler(handlers, default=True)
+@handler.passive(handlers)
 class HttpAuthHandler(HttpDetectionHandler):
 
     name = "httpauthdetection"
@@ -115,7 +115,7 @@ class _ResponseReplacement(DataHandler):
         return request
 
 
-@handler(handlers, default=False)
+@handler(handlers)
 class AndroidWebviewJsRce(_ResponseReplacement):
 
     name = "androidwebviewjsrce"
@@ -182,7 +182,7 @@ class AndroidWebviewJsRce(_ResponseReplacement):
         return data
 
 
-@handler(handlers, default=False)
+@handler(handlers)
 class SSLStrip(_ResponseReplacement):
     """Replace https urls with http. Uses the reporting mechanism to
     detect when these URLs are later visited and warns/notifies.
@@ -312,7 +312,7 @@ class SSLStrip(_ResponseReplacement):
         return data
 
 
-@handler(handlers, default=False)
+@handler(handlers)
 class ImageReplacement(_ResponseReplacement):
     """Replace images downloaded over HTTP with replace.png.
     Useful for detecting mixed content and a bit of a laugh.
@@ -365,7 +365,7 @@ class BlockHTTP(HttpDetectionHandler):
     def on_http(self, http):
         self.connection.close()
 
-@handler(handlers, default=True)
+@handler(handlers)
 class DisableCDCPEncryption(HttpDetectionHandler):
     """Disable the Chrome Data Compression Proxy encryption.
     See https://support.google.com/chrome/answer/3517349

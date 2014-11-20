@@ -21,7 +21,7 @@ from nogotofail.mitm.connection.handlers.store import handler
 from nogotofail.mitm.event import connection
 
 
-@handler(handlers, default=True)
+@handler.passive(handlers)
 class RawTrafficLogger(DataHandler):
     name = "rawlogger"
     description = "Log raw traffic to the traffic log"

@@ -63,26 +63,41 @@ def build_ssl_selector(default_ssl_handlers, prob_MITM=0.5, MITM_all=False):
         else:
             attack_prob = prob_MITM
             ssl_handlers = default_ssl_handlers
+        if not ssl_handlers:
+            return None
         if random.random() < attack_prob:
             return random.choice(ssl_handlers)
         return None
     return attack_selector
 
 
-def build_data_selector(default_handlers, MITM_all):
+def build_data_selector(default_handlers, MITM_all, prob_attack=0.5):
     internal = handlers.data.handlers.internal
 
     def data_selector(connection, app_blame):
         if not MITM_all and not app_blame.client_available(
             connection.client_addr):
             return internal + []
+        # Figure out our possible handlers
         client_info = app_blame.clients.get(connection.client_addr)
         client_info = client_info.info if client_info else None
         if client_info:
             handlers = client_info.get("Data-Attacks", default_handlers)
+            attack_prob = client_info.get("Attack-Probability", prob_attack)
         else:
             handlers = default_handlers
-        return internal + handlers
+            attack_prob = prob_attack
+
+        # Split handlers into passive/active
+        passive, active = [], []
+        for handler in handlers:
+            (active, passive)[handler.passive].append(handler)
+
+        # 1-p chance of not using any data attacks on a connection.
+        if random.random() >= attack_prob:
+            active = []
+
+        return internal + passive + active
     return data_selector
 
 
@@ -170,17 +185,14 @@ def parse_args():
     parser.add_argument(
         "-c", "--config", help="Configuration file", metavar="FILE")
     parser.add_argument(
-        "-v", "--verbose", help="verbose output", action="store_true",
-        default=False)
-    parser.add_argument(
         "-p", "--probability", help="probably of attacking a SSL connection",
         action="store", type=float, default=0.5)
     parser.add_argument(
         "-d", "--debug", help="Print debug output", action="store_true",
         default=False)
     parser.add_argument(
-        "-a", "--all", help="MITM all clients", action="store_true",
-        default=False)
+        "-b", "--bridge", help="Bridge connections from hosts without a client",
+        action="store_false", default=True, dest="all")
     parser.add_argument(
         "-l", "--logfile", help="Log output file", action="store")
     parser.add_argument(
@@ -189,7 +201,7 @@ def parse_args():
         "-t", "--trafficfile", help="Traffic output file", action="store")
     parser.add_argument(
         "-q", "--quiet",
-        help="Quiet output. Only prints MITM success messages",
+        help="Quiet output. Only prints important messages.",
         action="store_true", default=False)
     parser.add_argument(
         "--port", help="Port to bind the connection to", action="store",
@@ -214,7 +226,7 @@ def parse_args():
         "--serverssl", help="Run the app blame server with SSL using PEMFILE",
         metavar="PEMFILE", action="store")
     parser.add_argument(
-        "-b", "--block", help="Block connections with unknown blame info",
+        "--block", help="Block connections with unknown blame info",
         action="store_true", default=False)
     parser.add_argument(
         "--mode", help="Traffic capture mode. Options are " + ", ".join(modes.keys()),
@@ -236,12 +248,10 @@ def setup_logging(args):
     handler.setFormatter(LOG_FORMAT)
     if args.debug:
         handler.setLevel(logging.DEBUG)
-    elif args.verbose:
-        handler.setLevel(logging.INFO)
     elif args.quiet:
-        handler.setLevel(logging.CRITICAL)
-    else:
         handler.setLevel(logging.WARNING)
+    else:
+        handler.setLevel(logging.INFO)
     logger.addHandler(handler)
 
     if args.logfile:
@@ -281,7 +291,7 @@ def run():
                   for name in args.attacks]
     data_cls = [handlers.data.handlers.map[name] for name in args.data]
     ssl_selector = build_ssl_selector(attack_cls, args.probability, args.all)
-    data_selector = build_data_selector(data_cls, args.all)
+    data_selector = build_data_selector(data_cls, args.all, prob_attack=args.probability)
 
     logger.info("Starting...")
     try:
