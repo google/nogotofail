@@ -16,6 +16,6 @@ rm -f tmp.keyring*
 tar zxvf dnsmasq-$DNSMASQ_VERSION.tar.gz
 cd dnsmasq-$DNSMASQ_VERSION
 patch -p1 < ../dnsmasq-empty-AAAA-replies.patch
-make
-sudo make install
+make PREFIX=/usr
+sudo make install PREFIX=/usr
 cd -
