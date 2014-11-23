@@ -58,10 +58,10 @@ Here is a quick walkthrough of running and testing the MiTM locally.
 
 First, we’ll start the MiTM running as a SOCKS5 proxy.
 
-    $ python -m nogotofail.mitm -v -a --mode socks --port 8080 --serverssl server.crt
+    $ python -m nogotofail.mitm -d -a --mode socks --port 8080 --serverssl server.crt
 
 ````
--v - verbose logging, this shows all information about a connection and not just attack successes
+-d - Print debug output, this shows all information about a connection and not just attack successes.
 -a - Attack all connections, without this the mitm will only attack connections from hosts running a nogotofail client.
 --mode socks - run as a SOCKS5 proxy
 --port 8080 - listen on 8080
