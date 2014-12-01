@@ -114,4 +114,4 @@ def enable_redirect_rules(port, ipv6=False):
                 ipv6=ipv6)
     except Exception:
         logger.exception("Failed to setup routing rules")
-        disable_redirect_rules(ipv6=ipv6, mark=mark)
+        disable_redirect_rules(ipv6=ipv6)
