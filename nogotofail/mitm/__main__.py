@@ -102,7 +102,7 @@ def set_redirect_rules(args):
     port = args.port
     ipv6 = args.ipv6
     routing.enable_redirect_rules(port, ipv6=ipv6)
-    atexit.register(routing.disable_redirect_rules, port, ipv6=ipv6)
+    atexit.register(routing.disable_redirect_rules, ipv6=ipv6)
 
 def set_tproxy_rules(args):
     port = args.port
