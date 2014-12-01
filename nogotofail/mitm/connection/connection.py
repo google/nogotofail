@@ -120,6 +120,9 @@ class BaseConnection(object):
         self.logger.debug("Using data handlers %s" %
                 ', '.join([handler.name for handler in self.data_handlers]))
 
+        self.client_bridge_fn = self._bridge_client
+        self.server_bridge_fn = self._bridge_server
+
     @staticmethod
     def setup_server_socket(sock):
         """Do any additional pre-bind setup needed on the local socket.
@@ -240,9 +243,11 @@ class BaseConnection(object):
         """
         self.last_used = time.time()
         if (sock == self.client_socket):
-            return self._bridge_client()
+            return self.client_bridge_fn()
+        elif sock == self.server_socket:
+            return self.server_bridge_fn()
         else:
-            return self._bridge_server()
+            raise ValueError("Unknown socket!")
 
     def close(self, handler_initiated=True):
         """Close the connection. Does nothing if the connection is already closed.
