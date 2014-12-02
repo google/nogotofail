@@ -83,10 +83,8 @@ class BaseConnection(object):
     data_handlers = []
     ssl_handler_selector = None
     client_socket = None
-    raw_client_socket = None
     client_addr, client_port = None, None
     server_socket = None
-    raw_server_socket = None
     server_addr, server_port = None, None
     server_cert_path = None
     app_blame = None
@@ -98,6 +96,7 @@ class BaseConnection(object):
     id = None
     hostname = None
     closed = False
+    select_fds = [], [], []
 
     SSL_TIMEOUT = 2
 
@@ -110,7 +109,6 @@ class BaseConnection(object):
         self.app_blame = app_blame
         self.ssl_handler_selector = ssl_handler_selector
         self.client_socket = client_socket
-        self.raw_client_socket = client_socket
         self.logger = logging.getLogger("nogotofail.mitm")
         self.last_used = time.time()
         self.handler = handler_selector(self, app_blame)(self)
@@ -143,6 +141,14 @@ class BaseConnection(object):
         Returns if setup was successful.
         """
         raise NotImplemented()
+
+    def set_select_fds(self, rlist=[], wlist=[], xlist=[]):
+        """Set the set of fds to use for the server's select loop.
+
+        This update self.select_fds to the new values and calls server.set_select_fds.
+        """
+        self.select_fds = rlist, wlist, xlist
+        self.server.set_select_fds(self)
 
     def connect_ssl(self, client_hello):
         """Sets up both ends of SSL termination.
@@ -195,7 +201,7 @@ class BaseConnection(object):
             self.client_socket.setblocking(True)
             self.client_socket = ConnectionWrapper(connection)
             # Let the server know our sockets have changed
-            self.server.update_sockets(self)
+            self.set_select_fds(rlist=[self.client_socket, self.server_socket])
 
         except SSL.Error as e:
             self.handler.on_ssl_error(e)
@@ -261,8 +267,6 @@ class BaseConnection(object):
 
         close_quietly(self.server_socket)
         close_quietly(self.client_socket)
-        close_quietly(self.raw_client_socket)
-        close_quietly(self.raw_server_socket)
 
         self.handler.on_close(handler_initiated)
         for handler in self.data_handlers:
@@ -451,7 +455,7 @@ class RedirectConnection(BaseConnection):
             # based on server_addr
             self.server_socket = socket.create_connection((self.server_addr, self.server_port),
                     BaseConnection.SSL_TIMEOUT)
-            self.raw_server_socket = self.server_socket
+            self.select_fds = [self.server_socket, self.client_socket], [], []
         except socket.error:
             return False
         self.handler.on_establish()
@@ -528,7 +532,7 @@ class SocksConnection(BaseConnection):
         try:
             self.server_socket = socket.create_connection((self.server_addr, self.server_port),
                     BaseConnection.SSL_TIMEOUT)
-            self.raw_server_socket = self.server_socket
+            self.select_fds = [self.server_socket, self.client_socket], [], []
         except socket.error:
             # Send a generic connection error and bail
             self.client_socket.sendall(self._build_error_response(

@@ -37,7 +37,11 @@ class Server:
         self.kill = False
         self.port = port
         self.kill_fd, self.control_fd = self.setup_control_pipe()
-        self.connections = {self.kill_fd: None}
+        self.read_fds = set([self.kill_fd])
+        self.write_fds = set()
+        self.ex_fds = set()
+        self.fds = {}
+        self.connections = {}
         self.connection_class = connection_class
         self.handler_selector = handler_selector
         self.ssl_handler_selector = ssl_handler_selector
@@ -83,11 +87,14 @@ class Server:
         # set up the listening sockets
         local_server_sockets = self._create_server_sockets()
         for sock in local_server_sockets:
-            self.connections[sock] = None
+            self.read_fds.add(sock)
 
         while not self.kill:
-            r, _, _ = select.select(self.connections.keys(), [], [], 10)
-            for fd in r:
+            r, w, x = select.select(self.read_fds,
+                    self.write_fds,
+                    self.ex_fds,
+                    10)
+            for fd in r + w + x:
                 if fd == self.kill_fd:
                     return
                 if fd in local_server_sockets:
@@ -126,12 +133,24 @@ class Server:
                     if now - conn.last_used > 3600:
                         self.remove(conn)
 
-    def remove(self, conn):
-        conn.close(handler_initiated=False)
-        self.connections.pop(conn.server_socket, None)
-        self.connections.pop(conn.client_socket, None)
-        self.connections.pop(conn.raw_server_socket, None)
-        self.connections.pop(conn.raw_client_socket, None)
+    def _remove_fds(self, connection):
+        if connection in self.fds:
+            r, w, x = self.fds[connection]
+            for fd in r:
+                self.read_fds.remove(fd)
+                self.connections.pop(fd)
+            for fd in w:
+                self.write_fds.remove(fd)
+                self.connections.pop(fd)
+            for fd in x:
+                self.ex_fds.remove(fd)
+                self.connections.pop(fd)
+
+            del self.fds[connection]
+
+    def remove(self, connection):
+        connection.close(handler_initiated=False)
+        self._remove_fds(connection)
 
     def setup_connection(self, client_socket):
         if self.block_non_clients:
@@ -149,8 +168,7 @@ class Server:
                 self.data_handler_selector,
                 self.app_blame))
         if connection.start():
-            self.connections[connection.client_socket] = connection
-            self.connections[connection.server_socket] = connection
+            self.set_select_fds(connection)
 
     def setup_control_pipe(self):
         killer, controller = os.pipe()
@@ -160,12 +178,22 @@ class Server:
         self.kill = True
         os.write(self.control_fd, "Die!")
         self.serving_thread.join(5)
-        for sock in self.connections:
+        for sock in self.read_fds | self.write_fds | self.ex_fds:
             if sock != self.kill_fd:
-                sock.close()
+                util.close_quietly(sock)
 
-    def update_sockets(self, connection):
-        self.connections.pop(connection.raw_client_socket)
-        self.connections.pop(connection.raw_server_socket)
-        self.connections[connection.client_socket] = connection
-        self.connections[connection.server_socket] = connection
+    def set_select_fds(self, connection):
+        """Set the set of sockets for select based on connection.select_fds.
+
+        If connection had previous fds being used those are removed and replaced with the
+        current set in select_fds.
+        """
+        self._remove_fds(connection)
+        new_fds = connection.select_fds
+        self.fds[connection] = new_fds
+        r, w, x = new_fds
+        self.read_fds.update(r)
+        self.write_fds.update(w)
+        self.ex_fds.update(x)
+        for fd in set(r + w + x):
+            self.connections[fd] = connection
