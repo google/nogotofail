@@ -25,7 +25,6 @@ import time
 import uuid
 import errno
 
-
 class ConnectionWrapper(object):
     """Wrapper around OpenSSL's Connection object to make recv act like socket.recv()
     """
@@ -200,97 +199,112 @@ class BaseConnection(object):
             if e.errno != errno.EINPROGRESS:
                 raise e
 
-    def connect_ssl(self, client_hello):
-        """Sets up both ends of SSL termination.
-
-        Note that client_socket MUST have the TLS ClientHello as the first thing
-        recv() returns
-        or else pyOpenSSL will bail.
-
-        Returns setup success.
+    def _gen_ssl_connect_fn(self, connection, post_fn):
+        """Generate a bridge_fn for doing an ssl handshake on connection.
+        Once the handshake is completed post_fn will be called
         """
+        def do_ssl_handshake():
+            try:
+                connection.do_handshake()
+                return post_fn()
+            except (SSL.WantReadError, SSL.WantWriteError):
+                pass
+            except SSL.Error as e:
+                self.handler.on_ssl_error(e)
+                return False
+            except socket.error as e:
+                return False
+            return True
+        return do_ssl_handshake
+
+    def start_ssl_mitm(self, client_hello):
+        """Start the SSL MiTM.
+        This is non-blocking and will set the bridge_fns and select_fds as follows:
+        1. Start the SSL handshake with the server, ignore client data
+        2. On handshake completion call _on_server_ssl_established
+        3. Start the SSL handshake with the client, ignore server data
+        4. On completion call _on_client_ssl_established
+        5. At this point the SSL MiTM is set up and we switch back to bridging mode
+        """
+        self.client_hello = client_hello
         server_name = client_hello.extensions.get("server_name")
         if server_name:
             server_name = server_name.data
             self.hostname = server_name
+        self._start_server_ssl_connection(server_name)
 
-        try:
-            # Send our own client hello to the other side
-            self._setup_server_connection(server_name)
-
-            server_cert = self.server_socket.get_peer_certificate()
-            handler_cert = self.handler.on_certificate(server_cert)
-            ciphers_list = self.handler.on_server_cipher_suites(client_hello)
-
-            context = SSL.Context(SSL.SSLv23_METHOD)
-            context.set_verify(SSL.VERIFY_NONE, stub_verify)
-            if ciphers_list is not None:
-                context.set_cipher_list(ciphers_list)
-            if handler_cert is not None:
-                context.use_certificate_chain_file(handler_cert)
-                context.use_privatekey_file(handler_cert)
-
-            # Required for anonymous/ephemeral DH cipher suites
-            context.load_tmp_dh("./dhparam")
-
-            # Required for anonymous/ephemeral ECDH cipher suites
-            # The API is not available in the old version of pyOpenSSL which we
-            # currently use. Without the code below, anonymous and ephemeral
-            # ECDH cipher suites will not be used.
-            if hasattr(context, "set_tmp_ecdh"):
-                curve = crypto.get_elliptic_curve("prime256v1")
-                context.set_tmp_ecdh(curve)
-
-            # Send our ServerHello to the Client. Note that the Client's ClientHello
-            # MUST be the first thing that self.client_socket.recv() returns
-            self.client_socket.setblocking(False)
-            connection = SSL.Connection(context, self.client_socket)
-            connection.set_accept_state()
-            self._do_ssl_handshake(connection)
-
-            self.client_socket.setblocking(True)
-            self.client_socket = ConnectionWrapper(connection)
-            # Let the server know our sockets have changed
-            self.set_select_fds(rlist=[self.client_socket, self.server_socket])
-
-        except SSL.Error as e:
-            self.handler.on_ssl_error(e)
-            return False
-
-        self.handler.on_ssl_establish()
-        self.ssl = True
-        return True
-
-    def _setup_server_connection(self, servername=None):
+    def _start_server_ssl_connection(self, servername=None):
         context = SSL.Context(SSL.SSLv23_METHOD)
         context.set_verify(SSL.VERIFY_NONE, stub_verify)
         self.server_socket.setblocking(False)
         connection = SSL.Connection(context, self.server_socket)
+        self.server_socket = ConnectionWrapper(connection)
         if servername:
             connection.set_tlsext_host_name(servername)
         connection.set_connect_state()
-        self._do_ssl_handshake(connection)
+        self.server_bridge_fn = self._gen_ssl_connect_fn(connection,
+                self._on_server_ssl_established)
+        connection.set_connect_state()
+        # Start the handshake
+        self.server_bridge_fn()
+        # Stop selecting on the client until we are connected
+        self.set_select_fds(rlist=[self.server_socket])
 
+
+    def _start_client_ssl_connection(self):
+        server_cert = self.server_socket.get_peer_certificate()
+        handler_cert = self.handler.on_certificate(server_cert)
+        ciphers_list = self.handler.on_server_cipher_suites(self.client_hello)
+
+        context = SSL.Context(SSL.SSLv23_METHOD)
+        context.set_verify(SSL.VERIFY_NONE, stub_verify)
+        if ciphers_list is not None:
+            context.set_cipher_list(ciphers_list)
+        if handler_cert is not None:
+            context.use_certificate_chain_file(handler_cert)
+            context.use_privatekey_file(handler_cert)
+
+        # Required for anonymous/ephemeral DH cipher suites
+        context.load_tmp_dh("./dhparam")
+
+        # Required for anonymous/ephemeral ECDH cipher suites
+        # The API is not available in the old version of pyOpenSSL which we
+        # currently use. Without the code below, anonymous and ephemeral
+        # ECDH cipher suites will not be used.
+        if hasattr(context, "set_tmp_ecdh"):
+            curve = crypto.get_elliptic_curve("prime256v1")
+            context.set_tmp_ecdh(curve)
+
+        # Send our ServerHello to the Client. Note that the Client's ClientHello
+        # MUST be the first thing that self.client_socket.recv() returns
+        self.client_socket.setblocking(False)
+        connection = SSL.Connection(context, self.client_socket)
+        connection.set_accept_state()
+        self.client_socket = ConnectionWrapper(connection)
+        self.client_bridge_fn = self._gen_ssl_connect_fn(connection,
+                self._on_client_ssl_established)
+        # Start the handshake
+        self.client_bridge_fn()
+        # Only listen for client events until the connection is established
+        self.set_select_fds(rlist=[self.client_socket])
+
+    def _on_server_ssl_established(self):
+        """Once the server is connected begin connecting the client"""
+        self.server_bridge_fn = self._bridge_server
         self.server_socket.setblocking(True)
-        # OpenSSL connections are socket like, so we can use them as if they
-        # were a socket(once wrapped for compat)
-        self.server_socket = ConnectionWrapper(connection)
+        # Start Setting up the client connection
+        self._start_client_ssl_connection()
+        return True
 
-    def _do_ssl_handshake(self, connection):
-        start = time.time()
-        while True:
-            try:
-                connection.do_handshake()
-                break
-            except (SSL.WantReadError, SSL.WantWriteError):
-                now = time.time()
-                if now - start > BaseConnection.SSL_TIMEOUT:
-                    raise socket.timeout
-                remaining = BaseConnection.SSL_TIMEOUT - (now - start)
-                r, w, x = select.select(
-                    [connection], [connection], [], remaining)
-                if not r and not w:
-                    raise socket.timeout
+    def _on_client_ssl_established(self):
+        """Once the client is connected return to bridging mode"""
+        self.client_bridge_fn = self._bridge_client
+        self.client_socket.setblocking(True)
+        # Now we are ready to bridge in both directions
+        self.set_select_fds(rlist=[self.client_socket, self.server_socket])
+        self.ssl = True
+        self.handler.on_ssl_establish()
+        return True
 
     def bridge(self, sock):
         """Handle bridging data from sock to the other party.
@@ -372,7 +386,7 @@ class BaseConnection(object):
         for handler in self.data_handlers:
             handler.on_ssl(client_hello)
         if should_mitm:
-            self.connect_ssl(client_hello)
+            self.start_ssl_mitm(client_hello)
             return True
         return False
 
