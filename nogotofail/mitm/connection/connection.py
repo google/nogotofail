@@ -23,6 +23,7 @@ from nogotofail.mitm.util import tls, ssl2
 from nogotofail.mitm.util import close_quietly
 import time
 import uuid
+import errno
 
 
 class ConnectionWrapper(object):
@@ -150,6 +151,55 @@ class BaseConnection(object):
         self.select_fds = rlist, wlist, xlist
         self.server.set_select_fds(self)
 
+    def _on_establish(self):
+        """Called when the connection to the server is established successfully"""
+        self.handler.on_establish()
+        for handler in self.data_handlers:
+            handler.on_establish()
+
+    def _on_server_connected(self):
+        """Called when the socket.connect to the server completes"""
+        self.server_socket.setblocking(True)
+        self.server_bridge_fn = self._bridge_server
+        self.client_bridge_fn = self._bridge_client
+        self.set_select_fds(rlist=[self.client_socket, self.server_socket])
+        self._on_establish()
+
+    def _server_connect_bridge_fn(self):
+        """Bridge callback function for non-blocking socket connects
+
+        This should be set as the server_bridge_fn before calling socket.connect
+        on a non-blocking server_socket."""
+        error = self.server_socket.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
+        if error:
+            self.logger.info("Failed to connect to endpoint %s:%s errno %s",
+                    self.server_addr, self.server_port, error)
+            return False
+
+        self._on_server_connected()
+        return True
+
+    def _start_server_connect_nonblocking(self):
+        """Setup the server socket and start a nonblocking connect"""
+        try:
+            self.server_socket = socket.socket(self.client_socket.family,
+                    self.client_socket.type,
+                    self.client_socket.proto)
+            self.server_socket.setblocking(False)
+            self.server_bridge_fn = self._server_connect_bridge_fn
+            # We don't want to handle any data from the client until the
+            # connection to the server is established, only listen to the server
+            # socket for now.
+            self.set_select_fds(wlist=[self.server_socket])
+            # Try and connect, this will probably raise an EINPROGRESS
+            self.server_socket.connect((self.server_addr, self.server_port))
+            # If we finished instantly call _on_server_connected()
+            self._on_server_connected()
+        except socket.error as e:
+            # We expect an EINPROGRESS from the connect call.
+            if e.errno != errno.EINPROGRESS:
+                raise e
+
     def connect_ssl(self, client_hello):
         """Sets up both ends of SSL termination.
 
@@ -252,8 +302,6 @@ class BaseConnection(object):
             return self.client_bridge_fn()
         elif sock == self.server_socket:
             return self.server_bridge_fn()
-        else:
-            raise ValueError("Unknown socket!")
 
     def close(self, handler_initiated=True):
         """Close the connection. Does nothing if the connection is already closed.
@@ -443,6 +491,7 @@ class BaseConnection(object):
 
 class RedirectConnection(BaseConnection):
     """Connection based on getting traffic from iptables redirect rules"""
+
     def start(self):
         self.server_addr, self.server_port = (
             self._get_original_dest(self.client_socket))
@@ -451,16 +500,9 @@ class RedirectConnection(BaseConnection):
         for handler in self.data_handlers:
             handler.on_select()
         try:
-            # Python's socket.create_connection will handle the socket family correctly
-            # based on server_addr
-            self.server_socket = socket.create_connection((self.server_addr, self.server_port),
-                    BaseConnection.SSL_TIMEOUT)
-            self.select_fds = [self.server_socket, self.client_socket], [], []
+            self._start_server_connect_nonblocking()
         except socket.error:
             return False
-        self.handler.on_establish()
-        for handler in self.data_handlers:
-            handler.on_establish()
         return True
 
     def _get_original_dest(self, sock):
@@ -528,27 +570,28 @@ class SocksConnection(BaseConnection):
         self.handler.on_select()
         for handler in self.data_handlers:
             handler.on_select()
-        # Try and connect to the endpoint
+        # Start the connection to the endpoint
         try:
-            self.server_socket = socket.create_connection((self.server_addr, self.server_port),
-                    BaseConnection.SSL_TIMEOUT)
-            self.select_fds = [self.server_socket, self.client_socket], [], []
+            self._start_server_connect_nonblocking()
         except socket.error:
             # Send a generic connection error and bail
             self.client_socket.sendall(self._build_error_response(
                 SocksConnection.RESP_NETWORK_UNREACHABLE))
-            self.client_socket.close()
+            self.close()
             return False
 
-        # Send the OK message
-        self.client_socket.sendall(self._build_response())
-
-
-        # At this point the connection is ready to go
-        self.handler.on_establish()
-        for handler in self.data_handlers:
-            handler.on_establish()
         return True
+
+    def _on_server_connected(self):
+        try:
+            self.client_socket.sendall(self._build_response())
+        except socket.error:
+            self.client_socket.sendall(self._build_error_response(
+                SocksConnection.RESP_NETWORK_UNREACHABLE))
+            self.close()
+
+        super(SocksConnection, self)._on_server_connected()
+
 
     def _build_response(self):
         """Build the OK SOCKS5 connection response"""
