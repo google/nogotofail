@@ -30,7 +30,7 @@ to do this, depending on cost and control of the test device.
 1. Purchase a certificate for a domain you own from a trusted CA. This will cost
 you $50-70 but is the most flexible as it requires no modification of test
 devices. To prevent false positives this should be for a domain or subdomain
-that no one will never connect to.
+that no one will ever connect to.
 
 2. If you cannot purchase a certificate the other option is to create a CA and
 add it to your test devices as a trusted CA. At that point you can issue a
@@ -180,8 +180,8 @@ Now that you’ve set up nogotofail and seen how it runs the next step is to put
 it in a setup where you can use it on path. Nogotofail was designed to work
 anywhere on path, so you have a lot of flexibility in deployment. Here are a few ways
 we have deployed nogotofail in our testing. Setting up these deployments is beyond the scope
-of this document but there is plently of open documentation out there for how to set up machines
-in these configuration.
+of this document but there is plenty of open documentation out there for how to set up machines
+in these configurations.
 
 1. Run nogotofail on an actual router. This has the benefit of being completely
 transparent to the clients as they simply connect through router as usual.
@@ -292,10 +292,10 @@ nogotofail/mitm/event/connection.py
 
 
 For the raw traffic each event contains the source (either client or server), if
-it was injected by the mitm as opposed to sent by a endpoint, and the data
+it was injected by the mitm as opposed to sent by an endpoint, and the data
 base64 encoded.
 
 
 Note that due to how man in the middle attacks are established the traffic logs
-wont include SSL handshakes done by nogotofail and will show the decrypted
+won’t include SSL handshakes done by nogotofail and will show the decrypted
 traffic if a man in the middle is successful.
