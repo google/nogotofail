@@ -22,7 +22,7 @@ probability.
 
 ##The building blocks of nogotofail
 
-Nogotofail is centered around a on path man in the middle tool written in python
+Nogotofail is centered around an on path man in the middle tool written in python
 with an optional client application to provide additional attribution and
 configuration support.
 
