@@ -56,7 +56,7 @@ public class MuteNotificationsReceiver extends BroadcastReceiver {
     vulnerabilityType = values[0];
     List<String> packageNames = new ArrayList<String>(values.length - 1);
     for (int i = 1; i < values.length; i++) {
-      packageNames.add(values[1]);
+      packageNames.add(values[i]);
     }
     NotificationsPreferenceFragment.muteNotificationForPackages(
         context, vulnerabilityType, packageNames);
