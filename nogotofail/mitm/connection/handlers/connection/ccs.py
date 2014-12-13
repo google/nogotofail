@@ -120,7 +120,7 @@ class EarlyCCS(LoggingHandler):
             # record. Buffer the response to try and get more data.
             self.buffer = response
             # But don't buffer too much, give up after 16k.
-            if len(self.buffer > 2**14):
+            if len(self.buffer) > 2**14:
                 response = self.buffer
                 self.buffer = ""
                 return self.buffer
