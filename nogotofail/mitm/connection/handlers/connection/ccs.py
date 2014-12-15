@@ -52,7 +52,7 @@ class EarlyCCS(LoggingHandler):
                 # a ServerHello normally.
                 hello.session_id = []
                 for ext in hello.extension_list:
-                    if ext.type == Extension.TYPES.SESSIONTICKET:
+                    if ext.type == Extension.TYPE.SESSIONTICKET:
                         ext.raw_data = []
                 return record.to_bytes()
             if self.injected_server:
