@@ -195,17 +195,17 @@ class ClientHello(object):
             extensions), index
 
 
-class OpaqueFragment(object):
+class OpaqueMessage(object):
 
-    def __init__(self, fragment):
-        self.fragment = fragment
+    def __init__(self, body):
+        self.body = body
 
     @staticmethod
     def from_stream(body):
-        return OpaqueFragment(body), len(body)
+        return OpaqueMessage(body), len(body)
 
     def to_bytes(self):
-        return self.fragment
+        return self.body
 
 typemap = {
     1: ClientHello,
@@ -229,7 +229,7 @@ class HandshakeMessage(object):
         if length != len(body):
             raise ValueError("Not enough data in body")
         # Check this is a supported type
-        type = typemap.get(msg_type, OpaqueFragment)
+        type = typemap.get(msg_type, OpaqueMessage)
         obj, size = type.from_stream(body)
         if len(body) != size:
             raise ValueError("Read mismatch")
