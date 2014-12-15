@@ -13,8 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+import string
 import struct
 import base64
+from nogotofail.mitm.util import Constants
 from nogotofail.mitm.util.tls.types import parse
 
 # Map of extension_types to strings
@@ -50,6 +52,11 @@ name_map = {
 
 
 class Extension(object):
+
+    class TYPES(Constants):
+        _constants = Constants.constants(
+                {name.translate(string.maketrans(" ","_"),"()").upper() : value
+                    for value, name in name_map.items()})
 
     def __init__(self, extension_type, extension_data):
         self.type = extension_type

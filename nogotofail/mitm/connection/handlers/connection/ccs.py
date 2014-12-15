@@ -19,6 +19,7 @@ from nogotofail.mitm.connection.handlers.connection import LoggingHandler
 from nogotofail.mitm.connection.handlers.connection import handlers
 from nogotofail.mitm.connection.handlers.store import handler
 from nogotofail.mitm.util import tls
+from nogotofail.mitm.util.tls.types import Alert, Extension
 from nogotofail.mitm.event import connection
 
 
@@ -51,7 +52,7 @@ class EarlyCCS(LoggingHandler):
                 # a ServerHello normally.
                 hello.session_id = []
                 for ext in hello.extension_list:
-                    if ext.type == 35:
+                    if ext.type == Extension.TYPES.SESSIONTICKET:
                         ext.raw_data = []
                 return record.to_bytes()
             if self.injected_server:
@@ -59,8 +60,10 @@ class EarlyCCS(LoggingHandler):
                 # message error. Some other libraries send a close_notify so
                 # accept that as well.
                 if not (
-                    isinstance(message, tls.types.Alert) and ((message.description == 10 and
-                        message.level == 2) or message.description == 0)):
+                    isinstance(message, tls.types.Alert) and
+                       ((message.description == Alert.DESCRIPTION.UNEXPECTED_MESSAGE and
+                           message.level == Alert.LEVEL.FATAL) or
+                       message.description == Alert.DESCRIPTION.CLOSE_NOTIFY)):
                     self.log(
                         logging.CRITICAL,
                         "Client is vulnerable to Early CCS attack!")

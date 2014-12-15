@@ -21,6 +21,7 @@ import socket
 import struct
 from nogotofail.mitm.util import tls, ssl2
 from nogotofail.mitm.util import close_quietly
+from nogotofail.mitm.util.tls.types import Extension
 import time
 import uuid
 import errno
@@ -227,7 +228,7 @@ class BaseConnection(object):
         5. At this point the SSL MiTM is set up and we switch back to bridging mode
         """
         self.client_hello = client_hello
-        server_name = client_hello.extensions.get("server_name")
+        server_name = client_hello.extensions.get(Extension.TYPES.SERVER_NAME)
         if server_name:
             server_name = server_name.data
             self.hostname = server_name
@@ -365,7 +366,7 @@ class BaseConnection(object):
         """
         # Check for a server name and set our hostname
         if not self.hostname:
-            server_name = client_hello.extensions.get("server_name")
+            server_name = client_hello.extensions.get(Extension.TYPES.SERVER_NAME)
             if server_name:
                 server_name = server_name.data
                 self.hostname = server_name

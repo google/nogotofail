@@ -122,7 +122,7 @@ class ClientHello(object):
         self.ciphers = ciphers
         self.compression_methods = compression_methods
         self.extension_list = extensions
-        self.extensions = {ext.name: ext for ext in extensions}
+        self.extensions = {ext.type: ext for ext in extensions}
 
     def __str__(self):
         extensions = "\n".join(
