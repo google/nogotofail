@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from nogotofail.mitm.util import Constants
 from nogotofail.mitm.util.tls.types import parse
 from nogotofail.mitm.util.tls.types import Cipher, Extension, Version, Random, CompressionMethod
 import base64
@@ -221,14 +222,31 @@ class OpaqueMessage(object):
     def to_bytes(self):
         return self.body
 
-typemap = {
-    1: ClientHello,
-    2: ServerHello,
-    14: ServerHelloDone,
+name_map = {
+    0: "hello_request",
+    1: "client_hello",
+    2: "server_hello",
+    11: "certificate",
+    12: "server_key_exchange",
+    13: "certificate_request",
+    14: "server_hello_done",
+    15: "certificate_verify",
+    16: "client_key_exchange",
+    20: "finished",
 }
 
 
 class HandshakeMessage(object):
+
+    class TYPE(Constants):
+        _constants = {name.upper(): value for value, name in name_map.items()}
+
+
+    type_map = {
+        TYPE.CLIENT_HELLO: ClientHello,
+        TYPE.SERVER_HELLO: ServerHello,
+        TYPE.SERVER_HELLO_DONE: ServerHelloDone,
+    }
 
     def __init__(self, type, obj):
         self.obj = obj
@@ -243,7 +261,7 @@ class HandshakeMessage(object):
         if length != len(body):
             raise ValueError("Not enough data in body")
         # Check this is a supported type
-        type = typemap.get(msg_type, OpaqueMessage)
+        type = HandshakeMessage.type_map.get(msg_type, OpaqueMessage)
         obj, size = type.from_stream(body)
         if len(body) != size:
             raise ValueError("Read mismatch")
@@ -253,3 +271,7 @@ class HandshakeMessage(object):
         obj_bytes = self.obj.to_bytes()
         return struct.pack("B", self.type) + struct.pack(
             "!I", len(obj_bytes))[1:] + obj_bytes
+
+    def __str__(self):
+        return ("HandshakeMessage %s (%d)"
+            % (name_map.get(self.type), self.type))

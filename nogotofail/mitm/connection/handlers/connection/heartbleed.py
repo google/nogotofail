@@ -20,6 +20,7 @@ from nogotofail.mitm.connection.handlers.connection import handlers
 from nogotofail.mitm.connection.handlers.store import handler
 from nogotofail.mitm.event import connection
 from nogotofail.mitm.util import tls
+from nogotofail.mitm.util.tls.types import TlsRecord
 
 
 @handler(handlers, default=True)
@@ -38,7 +39,7 @@ class ClientHeartbleedHandler(LoggingHandler):
             index = 0
             while index < len(request):
                 record, size = tls.types.TlsRecord.from_stream(request[index:])
-                if record.content_type == 24:
+                if record.content_type == TlsRecord.CONTENT_TYPE.HEARTBEAT:
                     self.log(logging.CRITICAL, "Heartbleed response received")
                     self.log_event(
                         logging.CRITICAL,
