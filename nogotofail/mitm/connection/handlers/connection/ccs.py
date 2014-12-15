@@ -19,7 +19,7 @@ from nogotofail.mitm.connection.handlers.connection import LoggingHandler
 from nogotofail.mitm.connection.handlers.connection import handlers
 from nogotofail.mitm.connection.handlers.store import handler
 from nogotofail.mitm.util import tls
-from nogotofail.mitm.util.tls.types import Alert, Extension
+from nogotofail.mitm.util.tls.types import Alert, Extension, HandshakeMessage, TlsRecord
 from nogotofail.mitm.event import connection
 
 
@@ -42,7 +42,7 @@ class EarlyCCS(LoggingHandler):
         if not self.ssl or self.bridge:
             return request
         try:
-            record, size = tls.types.TlsRecord.from_stream(request)
+            record, size = TlsRecord.from_stream(request)
             message = record.messages[0]
             if not self.clienthello_handled:
                 self.clienthello_handled = True
@@ -87,16 +87,23 @@ class EarlyCCS(LoggingHandler):
         """Inject an early CCS while preserving the rest of the data."""
         version = record.version
 
-        ccs = tls.types.TlsRecord(
-            20, version,
+        ccs = TlsRecord(
+            TlsRecord.CONTENT_TYPE.CHANGE_CIPHER_SPEC,
+            version,
             [tls.types.ChangeCipherSpec(1)])
 
-        rec = tls.types.TlsRecord(22, version, record.messages[:hello_message_index + 1])
+        rec = TlsRecord(
+            TlsRecord.CONTENT_TYPE.HANDSHAKE,
+            version,
+            record.messages[:hello_message_index + 1])
 
         # Split the record if there are more messages after the ServerHello.
         remaining = record.messages[hello_message_index + 1:]
         if remaining:
-            rest = tls.types.TlsRecord(22, version, remaining).to_bytes()
+            rest = TlsRecord(
+                TlsRecord.CONTENT_TYPE.HANDSHAKE,
+                version,
+                remaining).to_bytes()
         else:
             rest = ""
 
@@ -112,11 +119,12 @@ class EarlyCCS(LoggingHandler):
         try:
             index = 0
             while index < len(response):
-                record, size = tls.types.TlsRecord.from_stream(response[index:])
+                record, size = TlsRecord.from_stream(response[index:])
                 version = record.version
                 for i, message in enumerate(record.messages):
                     # Inject the CCS right after the ServerHello
-                    if isinstance(message, tls.types.HandshakeMessage) and message.type == 2:
+                    if (isinstance(message, tls.types.HandshakeMessage)
+                           and message.type == HandshakeMessage.TYPE.SERVER_HELLO):
                         response = (response[:index] +
                                 self._inject_ccs(record, i) +
                                 response[index+size:])

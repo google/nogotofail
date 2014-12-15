@@ -13,19 +13,32 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+from nogotofail.mitm.util import Constants
 from nogotofail.mitm.util.tls.types import parse
 from nogotofail.mitm.util.tls.types import HandshakeMessage, Version, ChangeCipherSpec, Alert
 import base64
 import struct
 
-type_map = {
-    20: ChangeCipherSpec,
-    21: Alert,
-    22: HandshakeMessage,
+name_map = {
+    20: "change_cipher_spec",
+    21: "alert",
+    22: "handshake",
+    23: "application_data",
+    24: "heartbeat",
 }
 
 
 class TlsRecord(object):
+
+    class CONTENT_TYPE(Constants):
+        _constants = {name.upper(): value for value, name in name_map.items()}
+
+
+    type_map = {
+        CONTENT_TYPE.CHANGE_CIPHER_SPEC: ChangeCipherSpec,
+        CONTENT_TYPE.ALERT: Alert,
+        CONTENT_TYPE.HANDSHAKE: HandshakeMessage,
+    }
 
     def __init__(self, content_type, version, messages):
         self.content_type = content_type
@@ -42,7 +55,7 @@ class TlsRecord(object):
         if length != len(fragment):
             raise ValueError("Not enough data in fragment")
         # Check this is a Handshake message
-        type = type_map.get(content_type, OpaqueFragment)
+        type = TlsRecord.type_map.get(content_type, OpaqueFragment)
         objs = []
         if fragment == "":
             obj, size = type.from_stream(fragment)
@@ -61,6 +74,10 @@ class TlsRecord(object):
                 + self.version.to_bytes()
                 + struct.pack("!H", len(bytes))
                 + bytes)
+
+    def __str__(self):
+        return ("TLS Record %s %s (%d)"
+            % (self.version, name_map.get(self.content_type), self.content_type))
 
 
 class OpaqueFragment(object):
