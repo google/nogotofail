@@ -194,6 +194,20 @@ class ClientHello(object):
             version, random, session_id, ciphers, compression_methods,
             extensions), index
 
+    def to_bytes(self):
+        return (self.version.to_bytes() +
+            self.random.to_bytes() +
+            parse.to_tls_list(self.session_id, parse.to_opaque, "B") +
+            parse.to_tls_list(self.ciphers, Cipher.to_bytes, "!H") +
+            parse.to_tls_list(
+                self.compression_methods,
+                CompressionMethod.to_bytes,
+                "B") +
+            (
+                ""
+                if len(self.extension_list) == 0 else parse.to_tls_list(
+                    self.extension_list, Extension.to_bytes, "!H")))
+
 
 class OpaqueMessage(object):
 
