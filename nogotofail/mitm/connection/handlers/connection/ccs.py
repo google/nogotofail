@@ -27,6 +27,7 @@ class EarlyCCS(LoggingHandler):
 
     name = "earlyccs"
     description = "Tests for OpenSSL early CCS vulnerability(CVE-2014-0224)"
+    clienthello_handled = False
     injected_server = False
     bridge = False
     buffer = ""
@@ -37,11 +38,22 @@ class EarlyCCS(LoggingHandler):
         return False
 
     def on_request(self, request):
-        if not self.ssl or self.bridge or not self.injected_server:
+        if not self.ssl or self.bridge:
             return request
         try:
             record, size = tls.types.TlsRecord.from_stream(request)
             message = record.messages[0]
+            if not self.clienthello_handled:
+                self.clienthello_handled = True
+                hello = message.obj
+                # Force a full handshake by preventing session resumption by emptying
+                # session ID and SessionTicket extension. Otherwise a CCS will follow
+                # a ServerHello normally.
+                hello.session_id = []
+                for ext in hello.extension_list:
+                    if ext.type == 35:
+                        ext.raw_data = []
+                return record.to_bytes()
             if self.injected_server:
                 # OpenSSL after the EarlyCCS fix should send an unexpcted
                 # message error. Some other libraries send a close_notify so
@@ -71,11 +83,6 @@ class EarlyCCS(LoggingHandler):
     def _inject_ccs(self, record, hello_message_index):
         """Inject an early CCS while preserving the rest of the data."""
         version = record.version
-        server_hello = record.messages[hello_message_index].obj
-        # Remove session id and extensions to prevent resumption
-        # Otherwise a CCS will follow a ServerHello normally
-        server_hello.extension_list = []
-        server_hello.session_id = []
 
         ccs = tls.types.TlsRecord(
             20, version,
