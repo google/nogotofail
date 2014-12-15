@@ -68,7 +68,7 @@ class Alert(object):
         return struct.pack("BB", self.level, self.description)
 
     def __str__(self):
-        return ("TLS %s alert %s (%d)"
-            % (level_names.get(self.level),
+        return ("TLS alert: %s (%d) %s (%d)"
+            % (level_names.get(self.level), self.level,
                description_names.get(self.description), self.description))
 
