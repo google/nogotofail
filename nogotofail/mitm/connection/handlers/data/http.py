@@ -47,6 +47,7 @@ class HttpDetectionHandler(DataHandler):
             connection.AttackEvent(
                 self.connection, self.name, True,
                 host + http.path))
+        self.connection.vuln_notify(util.vuln.VULN_CLEARTEXT_HTTP)
 
 
 @handler.passive(handlers)
