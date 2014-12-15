@@ -48,6 +48,11 @@ description_names = {
     90:  "user_canceled",
     100: "no_renegotiation",
     110: "unsupported_extension",
+    111: "certificate_unobtainable",
+    112: "unrecognized_name",
+    113: "bad_certificate_status_response",
+    114: "bad_certificate_hash_value",
+    115: "unknown_psk_identity",
 }
 
 class Alert(object):
