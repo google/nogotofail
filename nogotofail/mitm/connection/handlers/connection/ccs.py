@@ -67,7 +67,7 @@ class EarlyCCS(LoggingHandler):
                        ((message.description == Alert.DESCRIPTION.UNEXPECTED_MESSAGE and
                            message.level == Alert.LEVEL.FATAL) or
                        (message.description == Alert.DESCRIPTION.PROTOCOL_VERSION and
-                           message.level == Alert.LEVEL.FATAL)
+                           message.level == Alert.LEVEL.FATAL) or
                        message.description == Alert.DESCRIPTION.CLOSE_NOTIFY)):
                     self.log(
                         logging.CRITICAL,
