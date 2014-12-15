@@ -53,7 +53,7 @@ name_map = {
 
 class Extension(object):
 
-    class TYPES(Constants):
+    class TYPE(Constants):
         _constants = Constants.constants(
                 {name.translate(string.maketrans(" ","_"),"()").upper() : value
                     for value, name in name_map.items()})
