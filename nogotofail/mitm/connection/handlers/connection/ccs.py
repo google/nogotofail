@@ -56,13 +56,18 @@ class EarlyCCS(LoggingHandler):
                         ext.raw_data = []
                 return record.to_bytes()
             if self.injected_server:
-                # OpenSSL after the EarlyCCS fix should send an unexpcted
-                # message error. Some other libraries send a close_notify so
-                # accept that as well.
+                # OpenSSL after the EarlyCCS fix should send a fatal alert
+                # unexpected_message (10). Some other libraries send a close_notify (0)
+                # so we accept that as well. Morever, if the client doesn't like the TLS
+                # protocol version chosen by the server (regardless of whether early
+                # CCS is injected), the client will send a fatal alert
+                # protocol_version (70).
                 if not (
                     isinstance(message, tls.types.Alert) and
                        ((message.description == Alert.DESCRIPTION.UNEXPECTED_MESSAGE and
                            message.level == Alert.LEVEL.FATAL) or
+                       (message.description == Alert.DESCRIPTION.PROTOCOL_VERSION and
+                           message.level == Alert.LEVEL.FATAL)
                        message.description == Alert.DESCRIPTION.CLOSE_NOTIFY)):
                     self.log(
                         logging.CRITICAL,
