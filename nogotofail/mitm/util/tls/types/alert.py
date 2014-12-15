@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 '''
 import struct
+from nogotofail.mitm.util import Constants
 
 level_names = {
     1: "warning",
@@ -50,8 +51,14 @@ description_names = {
 }
 
 class Alert(object):
-    LEVEL_FATAL = 2
-    LEVEL_WARNING = 1
+
+    class DESCRIPTION(Constants):
+        _constants = Constants.constants(
+                {name.upper(): value for value, name in description_names.items()})
+
+    class LEVEL(Constants):
+        _constants = Constants.constants(
+                {name.upper(): value for value, name in level_names.items()})
 
     def __init__(self, level, description):
         self.level = level
@@ -71,4 +78,3 @@ class Alert(object):
         return ("TLS alert: %s (%d) %s (%d)"
             % (level_names.get(self.level), self.level,
                description_names.get(self.description), self.description))
-
