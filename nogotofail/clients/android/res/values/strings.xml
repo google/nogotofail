@@ -86,6 +86,8 @@
     <string name="vuln_clientearlyccs">MiTM via client-side early CCS in TLS handshake</string>
     <!-- Vulnerability: Cleartext HTTP -->
     <string name="vuln_http">Cleartext HTTP</string>
+    <!-- Vulnerability: Man-in-The-Middle (MiTM) by replacing SSL server's key. -->
+    <string name="vuln_serverkeyreplace">MiTM via SSL server key replacement</string>
     <!-- Vulnerability: SMTP STARTTLS strip -->
     <string name="vuln_smtpstarttlsstrip">Downgrade of STARTTLS-protected SMTP to cleartext</string>
     <!-- Vulnerability: SSL strip -->
@@ -147,6 +149,8 @@
     <string name="attack_summary_rawlogger">Log raw traffic on the nogotofail server</string>
     <string name="attack_title_androidwebviewjsrce">Android WebView JavaScript bridge RCE</string>
     <string name="attack_summary_androidwebviewjsrce">Remote code execution via Android WebView JavaScript bridge</string>
+    <string name="attack_title_serverkeyreplace">TLS MiTM by replacing SSL server\'s key</string>
+    <string name="attack_summary_serverkeyreplace">TLS MiTM using server\'s SSL certificate with MiTM\'s key</string>
     <string name="attack_title_smtpauthdetection">SMTP auth credentials stealing</string>
     <string name="attack_summary_smtpauthdetection">SMTP credentials/auth token compromise</string>
     <string name="attack_title_smtpstarttlsstrip">SMTP STARTTLS strip</string>
