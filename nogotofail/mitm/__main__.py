@@ -29,9 +29,10 @@ import ConfigParser
 import collections
 import sys
 
-from nogotofail.mitm.connection import Server, RedirectConnection, SocksConnection, TproxyConnection
 from nogotofail.mitm.blame import Server as AppBlameServer
+from nogotofail.mitm.connection import Server, RedirectConnection, SocksConnection, TproxyConnection
 from nogotofail.mitm.connection import handlers
+from nogotofail.mitm.looper import MitmLoop
 from nogotofail.mitm.util import routing
 
 LOG_FORMAT = logging.Formatter("%(asctime)-15s [%(levelname)s] %(message)s")
@@ -307,13 +308,17 @@ def run():
             build_server(
                 args.port, blame, selector, ssl_selector,
                 data_selector, args.block, args.ipv6, mode.cls))
-        blame.start()
-        server.start()
-        while True:
-            time.sleep(1)
+        blame.start_listening()
+        server.start_listening()
+        # Run the main loop
+        looper = MitmLoop(blame, server)
+        looper.run()
     except KeyboardInterrupt:
         server.shutdown()
         blame.shutdown()
+    except Exception as e:
+        logger.exception("Uncaught top level exception!")
+        logger.fatal("EXITING")
 
 if __name__ == "__main__":
     run()

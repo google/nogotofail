@@ -97,7 +97,10 @@ class BaseConnection(object):
     id = None
     hostname = None
     closed = False
+    client_info = None
     select_fds = [], [], []
+    _connected = False
+    _blame_in_progress = False
 
     SSL_TIMEOUT = 2
 
@@ -159,11 +162,17 @@ class BaseConnection(object):
 
     def _on_server_connected(self):
         """Called when the socket.connect to the server completes"""
+        self._connected = True
         self.server_socket.setblocking(True)
         self.server_bridge_fn = self._bridge_server
         self.client_bridge_fn = self._bridge_client
-        self.set_select_fds(rlist=[self.client_socket, self.server_socket])
-        self._on_establish()
+
+        # Check if the connection is now ready to be used
+        if not self._blame_in_progress:
+            self._on_connection_ready()
+        else:
+            self.set_select_fds()
+
 
     def _server_connect_bridge_fn(self):
         """Bridge callback function for non-blocking socket connects
@@ -182,6 +191,12 @@ class BaseConnection(object):
     def _start_server_connect_nonblocking(self):
         """Setup the server socket and start a nonblocking connect"""
         try:
+            # Start the blame request
+
+            addr, port = self._get_client_remote_name()
+            self._blame_in_progress = self.app_blame.get_applications_async(self.client_addr,
+                    self.client_port, addr, port, self._on_get_applications_result)
+
             self.server_socket = socket.socket(self.client_socket.family,
                     self.client_socket.type,
                     self.client_socket.proto)
@@ -451,18 +466,6 @@ class BaseConnection(object):
 
         See the docs for nogotofail.mitm.blame.Server.get_applications more information.
         """
-        if not self.app_blame:
-            return None
-        if self._applications or cached_only:
-            return self._applications
-        addr, port = self._get_client_remote_name()
-        self._applications = (
-            self.app_blame.get_applications(
-                self.client_addr,
-                self.client_port,
-                addr,
-                port))
-        self.client_info = self.app_blame.clients.get(self.client_addr)
         return self._applications
 
     def vuln_notify(self, type):
@@ -475,14 +478,30 @@ class BaseConnection(object):
         """
         if not self.app_blame:
             return False
-        applications = self.applications()
-        if applications is None:
+        if self._applications is None:
             return False
-        client, apps = applications
+        info, apps = self._applications
         destination = self.hostname if self.hostname else self.server_addr
-        return self.app_blame.vuln_notify(
+
+        return self.app_blame.vuln_notify_async(
             self.client_addr, destination, self.server_port, self.id, type,
-            apps)
+            apps, self._on_vuln_notify_result)
+
+    def _on_vuln_notify_result(self, success, result=False):
+        # TODO: do something if vuln notify fails?
+        pass
+
+    def _on_get_applications_result(self, success, info=None, applications=None):
+        self._blame_in_progress = False
+        if success:
+            self._applications = info, applications
+            self.client_info = self.app_blame.clients[self.client_addr]
+        if self._connected:
+            self._on_connection_ready()
+
+    def _on_connection_ready(self):
+        self._on_establish()
+        self.set_select_fds(rlist=[self.client_socket, self.server_socket])
 
     def inject_request(self, request):
         """Inject a request to the server.
