@@ -44,6 +44,8 @@ class ServerKeyReplacementMITM(LoggingHandler):
     description = "Tests for clients vulnerable to SSL server key substitution"
     clienthello_adjusted = False
     signature_tampered = False
+    first_alert_received_after_tampering = None
+    vuln_detected = False
     buffer = ""
 
     def on_ssl(self, hello):
@@ -76,24 +78,23 @@ class ServerKeyReplacementMITM(LoggingHandler):
                        str(c).endswith("_SCSV"))]
                 return record.to_bytes()
             if self.signature_tampered:
-                # The client MUST reply with a fatal alert
-                if not (isinstance(message, Alert) and
-                       message.level == Alert.LEVEL.FATAL):
-                    self.log(
-                        logging.CRITICAL,
-                        ("Client is vulnerable to server key substitution"
-                        " attack! Client reply: %s" % str(message)))
-                    self.connection.vuln_notify(
-                        util.vuln.VULN_TLS_SERVER_KEY_REPLACEMENT)
-                    self.log_attack_event()
+                # The client MUST reply with an alert and close the connection.
+                # Just closing the connection is also acceptable.
+                if not self.first_alert_received_after_tampering:
+                    if isinstance(message, Alert):
+                        self.first_alert_received_after_tampering = message
+                        return request
 
-                    self.connection.close()
-                else:
-                    self.log(
-                        logging.DEBUG,
-                        ("Client not vulnerable to server key substitution"
-                        " attack. Client reply: %s" % str(message)))
-                    self.log_attack_event(success=False)
+                self.vuln_detected = True
+                self.log(
+                    logging.CRITICAL,
+                    ("Client is vulnerable to server key substitution"
+                    " attack! Client reply: %s" % str(message)))
+                self.connection.vuln_notify(
+                    util.vuln.VULN_TLS_SERVER_KEY_REPLACEMENT)
+                self.log_attack_event()
+                self.connection.close()
+                return request
 
         except ValueError:
             # Failed to parse TLS, this is probably due to a short read of a TLS
@@ -152,3 +153,19 @@ class ServerKeyReplacementMITM(LoggingHandler):
                 return self.buffer
             return ""
         return response
+
+    def on_close(self, handler_initiated):
+        if self.signature_tampered and not self.vuln_detected:
+            if self.first_alert_received_after_tampering:
+                self.log(
+                    logging.DEBUG,
+                    ("Client not vulnerable to server key substitution attack."
+                    " Client reply: %s"
+                    % str(self.first_alert_received_after_tampering)))
+            else:
+                self.log(
+                    logging.DEBUG,
+                    ("Client not vulnerable to server key substitution attack."
+                    " No reply received from client -- connection closed."))
+            self.log_attack_event(success=False)
+        return super(ServerKeyReplacementMITM, self).on_close(handler_initiated)
