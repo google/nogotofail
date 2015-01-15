@@ -113,6 +113,8 @@ class BaseConnection(object):
         self.app_blame = app_blame
         self.ssl_handler_selector = ssl_handler_selector
         self.client_socket = client_socket
+        # Make sure the client socket is nonblocking
+        self.client_socket.setblocking(False)
         self.logger = logging.getLogger("nogotofail.mitm")
         self.last_used = time.time()
         self.handler = handler_selector(self, app_blame)(self)
@@ -163,7 +165,6 @@ class BaseConnection(object):
     def _on_server_connected(self):
         """Called when the socket.connect to the server completes"""
         self._connected = True
-        self.server_socket.setblocking(True)
         self.server_bridge_fn = self._bridge_server
         self.client_bridge_fn = self._bridge_client
 
@@ -293,7 +294,6 @@ class BaseConnection(object):
 
         # Send our ServerHello to the Client. Note that the Client's ClientHello
         # MUST be the first thing that self.client_socket.recv() returns
-        self.client_socket.setblocking(False)
         connection = SSL.Connection(context, self.client_socket)
         connection.set_accept_state()
         self.client_socket = ConnectionWrapper(connection)
@@ -307,7 +307,6 @@ class BaseConnection(object):
     def _on_server_ssl_established(self):
         """Once the server is connected begin connecting the client"""
         self.server_bridge_fn = self._bridge_server
-        self.server_socket.setblocking(True)
         # Start Setting up the client connection
         self._start_client_ssl_connection()
         return True
@@ -315,7 +314,6 @@ class BaseConnection(object):
     def _on_client_ssl_established(self):
         """Once the client is connected return to bridging mode"""
         self.client_bridge_fn = self._bridge_client
-        self.client_socket.setblocking(True)
         # Now we are ready to bridge in both directions
         self.set_select_fds(rlist=[self.client_socket, self.server_socket])
         self.ssl = True
@@ -418,7 +416,13 @@ class BaseConnection(object):
                 if self._check_for_ssl(client_request):
                     return not self.closed
 
-            client_request = self.client_socket.recv(65536)
+            try:
+                client_request = self.client_socket.recv(65536)
+            except socket.error:
+                # recv can still time out even if select returned this socket
+                # for reading if we are using a wrapped SSL socket and no
+                # application data was ready. Keep bridging.
+                return not self.closed
             if not client_request:
                 return False
             client_request = self.handler.on_request(client_request)
@@ -426,7 +430,16 @@ class BaseConnection(object):
                 client_request = handler.on_request(client_request)
                 if client_request == "":
                     return not self.closed
-            self.server_socket.sendall(client_request)
+            sent = self.server_socket.send(client_request)
+
+            # send returning a 0 means the connection has been broken.
+            if sent == 0:
+                return False
+            # Check and make sure we sent everything, otherwise we need to start
+            # handling a full send buffer.
+            if sent != len(client_request):
+                remaining = client_request[sent:]
+                self._handle_short_server_send(remaining)
 
         except SSL.Error as e:
             self.handler.on_ssl_error(e)
@@ -437,7 +450,13 @@ class BaseConnection(object):
 
     def _bridge_server(self):
         try:
-            server_response = self.server_socket.recv(65536)
+            try:
+                server_response = self.server_socket.recv(65536)
+            except socket.error:
+                # recv can still time out even if select returned this socket
+                # for reading if we are using a wrapped SSL socket and no
+                # application data was ready. Keep bridging.
+                return not self.closed
             if not server_response:
                 return False
             server_response = self.handler.on_response(server_response)
@@ -445,12 +464,70 @@ class BaseConnection(object):
                 server_response = handler.on_response(server_response)
                 if server_response == "":
                     break
-            self.client_socket.sendall(server_response)
+            sent = self.client_socket.send(server_response)
+            # send returning a 0 means the connection has been broken.
+            if sent == 0:
+                return False
+            # Check and make sure we sent everything, otherwise we need to start
+            # handling a full send buffer.
+            if sent != len(server_response):
+                remaining = server_response[sent:]
+                self._handle_short_client_send(remaining)
         except SSL.Error as e:
             self.handler.on_ssl_error(e)
             return False
         except socket.error:
             return False
+        return not self.closed
+
+    def _handle_short_client_send(self, remaining):
+        """Handle a send to the client that failed to send all the data.
+        This means our send buffer is full so start selecting for W on the client and stop
+        reading data from the server until we've successfully sent everything pending."""
+        self._remaining_client_send_data = remaining
+        self.set_select_fds(wlist=[self.client_socket])
+        self.client_bridge_fn = self._short_send_client_bridge_fn
+
+    def _short_send_client_bridge_fn(self):
+        data = self._remaining_client_send_data
+        try:
+            sent = self.client_socket.send(data)
+        except socket.error:
+            return False
+        remaining = data[sent:]
+        self._remaining_client_send_data = remaining
+        # Keep sending if we're not done yet
+        if remaining:
+            return not self.closed
+        # Otherwise resume normal operations
+        self.client_bridge_fn = self._bridge_client
+        self.set_select_fds(rlist=[self.client_socket, self.server_socket])
+        return not self.closed
+
+#TODO: Having a method for short_client_send and short_server_send is just code waste, there
+# should just be one
+    def _handle_short_server_send(self, remaining):
+        """Handle a send to the client that failed to send all the data.
+        This means our send buffer is full so start selecting for W on the client and stop
+        reading data from the server until we've successfully sent everything pending."""
+        self._remaining_server_send_data = remaining
+        self.set_select_fds(wlist=[self.server_socket])
+        self.client_bridge_fn = self._short_send_server_bridge_fn
+
+    def _short_send_server_bridge_fn(self):
+        data = self._remaining_server_send_data
+        try:
+            sent = self.server_socket.send(data)
+        except socket.error:
+            return False
+        remaining = data[sent:]
+        self._remaining_server_send_data = remaining
+        # Keep sending if we're not done yet
+        if remaining:
+            return not self.closed
+        # Otherwise resume normal operations
+        self.server_bridge_fn = self._bridge_server
+        self.set_select_fds(rlist=[self.client_socket, self.server_socket])
         return not self.closed
 
     def _get_client_remote_name(self):

@@ -116,7 +116,7 @@ class _ResponseReplacement(DataHandler):
         return request
 
 
-@handler(handlers)
+@handler(handlers, default=False)
 class AndroidWebviewJsRce(_ResponseReplacement):
 
     name = "androidwebviewjsrce"
@@ -183,7 +183,7 @@ class AndroidWebviewJsRce(_ResponseReplacement):
         return data
 
 
-@handler(handlers)
+@handler(handlers, default=False)
 class SSLStrip(_ResponseReplacement):
     """Replace https urls with http. Uses the reporting mechanism to
     detect when these URLs are later visited and warns/notifies.
