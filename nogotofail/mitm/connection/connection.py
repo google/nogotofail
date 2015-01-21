@@ -607,6 +607,18 @@ class RedirectConnection(BaseConnection):
         self.server_addr, self.server_port = (
             self._get_original_dest(self.client_socket))
 
+        # If the client tries to connect to the MiTM through the MiTM it will
+        # lead to a loop where we make a connection to ourselves which is then
+        # MiTM'd and then tries to connect to the MiTM and so on until we run
+        # out of fd's and the whole thing comes crashing down, try and avoid
+        # that.
+        if self.server.is_remote_mitm_server(self.server_addr, self.server_port):
+            self.logger.warning(
+                "Client %s attempting to connect to MiTM directly, aborting connection." %
+                (self.client_addr))
+            close_quietly(self.client_socket)
+            return False
+
         self.handler.on_select()
         for handler in self.data_handlers:
             handler.on_select()
