@@ -120,6 +120,22 @@ class Server:
         for fd in set(r + w + x):
             self.connections[fd] = connection
 
+    def is_remote_mitm_server(self, host, port):
+        """Check if the remote host:port is one of the MiTM server sockets.
+        These connections should be avoided otherwise loops can be created where
+        the MiTM tries to connect to the MiTM which then sees the remote as the MiTM
+        and tries to connection and so on. This is best effort only, routing can still
+        cause these loops.
+
+        Returns if host:port belongs to one of the server sockets."""
+        local_v4, local_v6 = util.get_interface_addresses()
+        if host in local_v4 or host in local_v6:
+            for socket in self._local_server_sockets:
+                local = socket.getsockname()
+                if local[1] == port:
+                    return True
+        return False
+
     def _create_server_sockets(self):
         sockets = []
         for family in [socket.AF_INET, socket.AF_INET6]:
