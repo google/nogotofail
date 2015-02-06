@@ -58,11 +58,9 @@ Here is a quick walkthrough of running and testing the MiTM locally.
 
 First, we’ll start the MiTM running as a SOCKS5 proxy.
 
-    $ python -m nogotofail.mitm -v -a --mode socks --port 8080 --serverssl server.crt
+    $ python -m nogotofail.mitm --mode socks --port 8080 --serverssl server.crt
 
 ````
--v - verbose logging, this shows all information about a connection and not just attack successes
--a - Attack all connections, without this the mitm will only attack connections from hosts running a nogotofail client.
 --mode socks - run as a SOCKS5 proxy
 --port 8080 - listen on 8080
 --serverssl servert.crt- The certificate we generated above. This will be used for the client connections.
@@ -234,9 +232,6 @@ root so it can set up the routing rules to intercept traffic.
 nogotofail.mitm has a lot of configuration options, here are some of the
 important ones you’ll want to tweak.
 
-    -a/--all : Attack all connections. By default the mitm will only attack
-    connections from addresses with a client running and let all other connections
-    pass through silently.
     -p/--probability: Set the probability of attack an TLS/SSL connection. See the
     “Why Probability” section for details on probability.
     -A/--Attacks: Set the default connection handlers to run when TLS/SSL is
