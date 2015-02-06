@@ -111,8 +111,8 @@ def build_server(port, blame, selector, ssl_selector, data_selector, block, ipv6
                   connection_class=cls)
 
 
-def build_blame(cert, probability, attacks, data_attacks):
-    return AppBlameServer(8443, cert, probability, attacks, data_attacks)
+def build_blame(port, cert, probability, attacks, data_attacks):
+    return AppBlameServer(port, cert, probability, attacks, data_attacks)
 
 def set_redirect_rules(args):
     port = args.port
@@ -205,8 +205,11 @@ def parse_args():
         help="Quiet output. Only prints important messages.",
         action="store_true", default=False)
     parser.add_argument(
-        "--port", help="Port to bind the connection to", action="store",
+        "--port", help="Port to bind the mitm to", action="store",
         type=int, default=8080)
+    parser.add_argument(
+        "--cport", help="Port to listen for nogotofail clients on", action="store",
+        type=int, default=8443)
     parser.add_argument(
         "-6", "--ipv6",
         help=("Route IPv6 traffic. "
@@ -302,7 +305,7 @@ def run():
             mode.setup(args)
         blame = (
             build_blame(
-                args.serverssl, args.probability, attack_cls,
+                args.cport, args.serverssl, args.probability, attack_cls,
                 data_cls))
         server = (
             build_server(
