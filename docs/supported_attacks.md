@@ -39,4 +39,4 @@ Output log (-l) [ERROR] messages occur when the following conditions are detecte
 •	xmppauthdetection - Detect authentication credentials in XMPP traffic
 •	smtpstarttlsstrip - Suppress STARTTLS in SMTP
 •	smtpauthdetection - Detect authentication credentials in SMTP traffic
-•	imapauthdetection - Detect authentication credentials in IMAP traffic
+•	imapauthdetection - Detect authentication credentials in IMAP traffic.
