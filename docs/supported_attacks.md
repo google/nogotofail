@@ -2,7 +2,7 @@
 Each of the handlers attempts to exploit a specific TLS/SSL vulnerability.
 There are two types of TLS handlers by nogotofail:
 + handlers which test for vulnerabilities allowing insecure **connections**, and
-+ handlers which detect or exploit vulnerabilites impacting the security of **data** 
++ handlers which detect or exploit vulnerabilites affecting **data** security.
 
 Handlers write [WARNING], [ERROR] or [CRITICAL] messages to the output log (-l) based on the severity. 
 
