@@ -35,7 +35,7 @@ The available data handlers are available are:
   + SSLv2 is detected
   Output log [WARNING] messages occur when SSLv3 is used with TLS_FALLBACK_SCSV supported
 + insecurecipherdetection - Detect insecure cipher suites in TLS Client Hellos.
-  Output log (-l) [ERROR] messages occur when the following conditions are detected:
+  Output log [ERROR] messages appear when one of the following conditions is detected:
   + anonymous (asymmetric encryption) ciphers, 
   + no or NULL asymmetric encryption, symmetric encryption, or 
   + no integrity algorithm (message authentication code) is specified in the cipher suite.
