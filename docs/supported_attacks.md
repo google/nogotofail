@@ -7,7 +7,7 @@ There are two types of TLS handlers by nogotofail:
 Handlers write [WARNING], [ERROR] or [CRITICAL] security issues to the output log (-l) based on the their severity. 
 
 ##Connection Handlers
-The available data handlers are available are:
+List of available connection handlers and output log messages generated:
 + droptls - Drops TLS connections but lets SSLv3 connections through
 + selfsigned - Attempts to MiTM using a self-signed certificate for the requested domain.
   Output log messages generated: 
@@ -21,7 +21,7 @@ The available data handlers are available are:
 + dropssl - Drops SSL connections
 + invalidhostname - Attempts to MiTM using a valid certificate for another domain.
   NOTE: The certificate used for testing must have the path “./trusted-cert.pem” and have a valid cert and private key.
-+ earlyccs - Tests for OpenSSL early CCS vulnerability(CVE-2014-0224)
++ earlyccs - Tests for OpenSSL early CCS vulnerability(CVE-2014-0224).
   Output log messages generated:
   + [CRITICAL] when the client is vulnerable to the Early CCS attack
 + serverkeyreplace - Tests for clients vulnerable to SSL server key substitution.
@@ -29,15 +29,15 @@ The available data handlers are available are:
   + [CRITICAL] Client is vulnerable to the server key substitution attack
 
 ##Data Handlers
-The available data handlers are available are:
+List of available data handlers and output log messages generated:
 + imapstarttlsstrip - Suppress STARTTLS in IMAP.
   Output log messages generated:
   + [CRITICAL] Cleartext traffic appears after STARTTLS is stripped
 + httpauthdetection - Detect authorization headers in HTTP requests.
   Output log messages generated:
   + [CRITICAL] Authorization header in request from client
-+ imagereplace - Replace responses with Content-Type of image/* with ./replace.png
-+ customrequest - Detect client specified regexs in requests
++ imagereplace - Replace responses with Content-Type of image/* with ./replace.png.
++ customrequest - Detect client specified regexs in requests.
 + weaktlsversiondetection - Detect versions of the TLS/SSL protocols that are known to be weak.
   Output log messages generated:
   + [CRITICAL] SSLv3 is used without support for TLS_FALLBACK_SCSV, or i.e. the POODLE vulnerability https://www.imperialviolet.org/2014/10/14/poodle.html
@@ -49,15 +49,15 @@ The available data handlers are available are:
   + [ERROR] Use of anonymous (asymmetric encryption) in the cipher suite 
   + [ERROR] NULL asymmetric encryption or symmetric encryption in the cipher suite 
   + [ERROR] no integrity algorithm (message authentication code) is specified in the cipher suite.
-+ blockhttp - Block HTTP traffic
-+ disablecdcpencryption - Disable Chrome Data Compression Proxy encryption
++ blockhttp - Block HTTP traffic.
++ disablecdcpencryption - Disable Chrome Data Compression Proxy encryption.
 + sslstrip - Runs sslstrip on http traffic. Detects when sslstrip'd urls are visited.
   Output log messages generated:
   + [CRITICAL] Client detected visiting an SSLStrip'd URL
 + httpdetection - Detects plaintext HTTP requests i.e. not using SSL/TLS.
   Output log messages generated:
   + [ERROR] Client HTTP request detected 
-+ xmppstarttlsstrip - Suppress STARTTLS in XMPP streams
++ xmppstarttlsstrip - Suppress STARTTLS in XMPP streams.
   Output log messages generated:
   + [CRITICAL] Cleartext traffic is detected after stripped STARTTLS
   + [WARNING]  XMPP STARTTLS feature missing
