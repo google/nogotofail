@@ -9,7 +9,7 @@ LOG_DIR=/var/log/nogotofail
 # Install the relevant source subtree into $INSTALL_DIR
 mkdir -p $INSTALL_DIR $CONFIG_DIR
 cp -a ../../nogotofail $INSTALL_DIR/
-cp ../../dhparam ../../replace.png $INSTALL_DIR/
+cp ../../dhparam ../../replace.png ../../superfish.pem $INSTALL_DIR/
 chown -R root:root $INSTALL_DIR
 chmod -R go-w $INSTALL_DIR
 

@@ -84,3 +84,10 @@ class SelfSignedMITM(LoggingHandler):
         san = altnames[0] if len(altnames) > 0 else None
         self.certificate = self.ca.get_cert(cn, san)
         return self.certificate
+
+@handler(handlers, default=True)
+class SuperFishMITM(SelfSignedMITM):
+    name = "superfishmitm"
+    description = "Attempt a MiTM using the compromised superfish MITM CA"
+    ca = util.CertificateAuthority("superfish.pem")
+    vuln = util.vuln.VULN_TLS_SUPERFISH_TRUSTED
