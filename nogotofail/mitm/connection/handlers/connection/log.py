@@ -27,7 +27,7 @@ class LoggingHandler(base.BaseConnectionHandler):
 
     FORMAT = (
         "[%(client_addr)s:%(client_port)s<=>%(server_addr)s:%(server_port)s "
-        "%(class)s](%(app_str)s) %(message)s")
+        "%(connection_id)s %(class)s](%(app_str)s) %(message)s")
     logger = logging.getLogger("nogotofail.mitm")
     event_logger = logging.getLogger("event")
     ssl = False
@@ -39,7 +39,8 @@ class LoggingHandler(base.BaseConnectionHandler):
              "server_port": self.connection.server_port,
              "message": message,
              "app_str": self.applications_str,
-             "class": self.name}
+             "class": self.name,
+             "connection_id": self.connection.id}
         self.logger.log(level, self.FORMAT % d)
 
     def log_event(self, level, event):
