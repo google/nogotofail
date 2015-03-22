@@ -55,6 +55,13 @@ class InsecureCipherDetectionHandler(DataHandler):
                 "Client enabled NULL integrity TLS/SSL cipher suites %s" %
                 (", ".join(integ_ciphers)))
 
+        # Check for export ciphers since they're horribly weak
+        export_ciphers = [str(c) for c in client_hello.ciphers if "EXPORT" in str(c)]
+        if export_ciphers:
+            self._handle_bad_ciphers(integ_ciphers,
+                "Client enabled export TLS/SSL cipher suites %s" %
+                (", ".join(export_ciphers)))
+
 
 @handler.passive(handlers)
 class WeakTLSVersionDetectionHandler(DataHandler):

@@ -45,7 +45,10 @@ class Client(object):
         self.server = server
         self.info = None
         self.last_used = now or time.time()
-        self._select_fn = self._handshake_select_fn
+        if isinstance(socket, ssl.SSLSocket):
+            self._select_fn = self._ssl_handshake_select_fn
+        else:
+            self._select_fn = self._handshake_select_fn
         self.queries = {}
         self._txid = 0
         self._buffer = ""
@@ -159,6 +162,16 @@ class Client(object):
             except (ValueError, TypeError):
                 callback(False)
         return on_get_applications
+
+    def _ssl_handshake_select_fn(self):
+        self.socket.setblocking(False)
+        try:
+            self.socket.do_handshake()
+        except socket.error:
+            return True
+        self.socket.setblocking(True)
+        self._select_fn = self._handshake_select_fn
+        return True
 
     def _handshake_select_fn(self):
         """Handle client data during the handshake."""
@@ -319,7 +332,8 @@ class Server:
             self.server_socket = (
                 ssl.wrap_socket(
                     self.server_socket, certfile=self.cert,
-                    server_side=True))
+                    server_side=True,
+                    do_handshake_on_connect=False))
 
     def _on_server_socket_select(self):
         try:

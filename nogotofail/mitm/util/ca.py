@@ -103,6 +103,15 @@ class CertificateAuthority(object):
                 OpenSSL.crypto.dump_certificate(
                     OpenSSL.crypto.FILETYPE_PEM,
                     cert))
+            f.write(
+                OpenSSL.crypto.dump_certificate(
+                    OpenSSL.crypto.FILETYPE_PEM,
+                    self.cert))
+
+    def _get_file_name(self, cn, san):
+        san_str = san.get_data() if san else ''
+        name_hash = hash(cn + san_str)
+        return "._cert_%s_%s.pem" % (os.path.basename(self.ca_file), name_hash)
 
 
     def get_cert(self, cn, san):
@@ -111,11 +120,8 @@ class CertificateAuthority(object):
         san: The subject alt name to add to the certificate, or None
 
         Returns a path to a pem file containing the key and cert"""
-        san_str = san.get_data() if san else ''
-        # TODO: Bake the CA into this so we don't conflict if we share a
-        # cert_dir with another CA
-        name_hash = hash(cn + san_str)
-        path = os.path.sep.join([self.cert_dir, '.cert_%s.pem' % (name_hash)])
+        path = os.path.sep.join([self.cert_dir, self._get_file_name(cn, san)])
+        # TODO: Check that the cert at path is valid
         if not os.path.exists(path):
             self._generate_cert(cn, san, path)
         return path
