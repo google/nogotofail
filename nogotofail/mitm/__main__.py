@@ -235,6 +235,9 @@ def parse_args():
     parser.add_argument(
         "--mode", help="Traffic capture mode. Options are " + ", ".join(modes.keys()),
         choices=modes, metavar="MODE", action="store", default=default_mode)
+    parser.add_argument(
+        "--no-routing", help="Do not create routing rules in modes that require them.",
+        action="store_true", default=False)
     parser.set_defaults(**config)
     return parser.parse_args(argv)
 
@@ -301,7 +304,7 @@ def run():
     try:
         signal.signal(signal.SIGTERM, sigterm_handler)
         mode = modes[args.mode]
-        if mode.setup:
+        if mode.setup and not args.no_routing:
             mode.setup(args)
         blame = (
             build_blame(
