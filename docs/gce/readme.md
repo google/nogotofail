@@ -22,12 +22,12 @@ to the GCE instance via OpenVPN.
 3. cd into docs/gce of the nogotofail source tree.
 4. Run ./setup.sh. This will set up an OpenVPN server, dnsmasq DNS server,
    and nogotofail MiTM daemon.
-5. Optionally, to enable the invalidhostname attack where the MiTM presents
-   a trusted certificate for the wrong hostname, provide the trusted
-   certificate chain and the private key in /opt/nogotofail/trusted-cert.pem.
-   See the Invalid Hostname Certificate section of the Getting Started guide
-   [../getting_started.md](../getting_started.md).
+5. The mitm daemon is stopped after installation. To start the mitm daemon use the command
 
+```$ /etc/init.d/nogotofail-mitm start```
+
+> Optionally, to enable the invalidhostname attack where the MiTM presents a trusted certificate for the wrong hostname, provide the trusted certificate chain and the private key in /opt/nogotofail/trusted-cert.pem.
+> See the Invalid Hostname Certificate section of the Getting Started guide [../getting_started.md](../getting_started.md). 
 
 ### Set up the client(s) to be MiTM'd
 1. Obtain /etc/openvpn/nogotofail.ovpn from the GCE instance.
@@ -41,6 +41,17 @@ to the GCE instance via OpenVPN.
 7. On the GCE instance, check that the traffic from this client is seen
    by the MiTM by looking at / tailing /var/log/nogotofail/mitm.log.
 
+### Configuring the GCE instance
+The /opt/nogotofail directory is the home folder for the mitm daemon and is where configuration options reside, including:
+* mitm.conf: Daemon configuration file.
+* server.crt: Self-signed certificate used to secure traffic between the mitm daemon and client.
+* trusted-cert.pem: Certificate used for the invalid hostname attack. This certificate needs to containt the the full certificate chain in pem format. 
+
+The mitm daemon can be started, stopped and restarted using the commands
+
+    $ /etc/init.d/nogotofail-mitm start
+    $ /etc/init.d/nogotofail-mitm stop
+    $ /etc/init.d/nogotofail-mitm restart
 
 ## Architecture
 
