@@ -42,10 +42,9 @@ to the GCE instance via OpenVPN.
    by the MiTM by looking at / tailing /var/log/nogotofail/mitm.log.
 
 ### Configuring the GCE instance
-The /opt/nogotofail directory is the home folder for the mitm daemon and is where configuration options reside, including:
-* mitm.conf: Daemon configuration file.
-* server.crt: Self-signed certificate used to secure traffic between the mitm daemon and client.
-* trusted-cert.pem: Certificate used for the invalid hostname attack. This certificate needs to containt the the full certificate chain in pem format. 
+Configuration options for the mitm daemon are:
+* /etc/nogotofail/mitm.conf: Daemon configuration file. See the example configuration file included [mitm.conf](mitm.conf).
+* /opt/nogotofail/trusted-cert.pem: Certificate used for the invalid hostname attack. The file must contain the full certificate chain and the private key. 
 
 The mitm daemon can be started, stopped and restarted using the commands
 
