@@ -463,7 +463,7 @@ class BaseConnection(object):
             for handler in self.data_handlers:
                 server_response = handler.on_response(server_response)
                 if server_response == "":
-                    break
+                    return not self.closed
             sent = self.client_socket.send(server_response)
             # send returning a 0 means the connection has been broken.
             if sent == 0:
