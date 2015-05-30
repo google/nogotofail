@@ -49,11 +49,11 @@ class ConnectionWrapper(object):
         except SSL.SysCallError as e:
             if e.args != (-1, "Unexpected EOF"):
                 raise e
+        except SSL.ZeroReturnError:
+            pass
         except SSL.Error as e:
             if e.args != (-1, "Unexpected EOF"):
                 raise e
-        except SSL.ZeroReturnError:
-            pass
         return buf
 
 
@@ -418,7 +418,7 @@ class BaseConnection(object):
 
             try:
                 client_request = self.client_socket.recv(65536)
-            except socket.error:
+            except (socket.error, SSL.WantReadError):
                 # recv can still time out even if select returned this socket
                 # for reading if we are using a wrapped SSL socket and no
                 # application data was ready. Keep bridging.
@@ -452,7 +452,7 @@ class BaseConnection(object):
         try:
             try:
                 server_response = self.server_socket.recv(65536)
-            except socket.error:
+            except (socket.error, SSL.WantReadError):
                 # recv can still time out even if select returned this socket
                 # for reading if we are using a wrapped SSL socket and no
                 # application data was ready. Keep bridging.
