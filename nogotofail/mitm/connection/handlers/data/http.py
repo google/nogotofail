@@ -23,6 +23,87 @@ from nogotofail.mitm.event import connection
 import re
 
 
+# By making this an internal handler, it will be enabled by default and run
+# before all other handlers, so that other handlers only see entire requests.
+@handler(handlers, internal=True)
+class BufferedHttpHandler(DataHandler):
+    """Buffers messages until entire an HTTP request/response has arrived.
+
+    This data handler doesn't call on_request or on_response before an entire
+    request/response has been read. The handler does not do anything by itself,
+    but when used as the first element in a chain, it effectively buffers
+    requests/responses for the benefit of all following handlers.
+    """
+
+    name = "bufferedhttp"
+    description = (
+        "Buffer messages until entire an HTTP request/response has arrived.")
+
+    class BufferState(object):
+        """The state of a partially buffered HTTP request or response."""
+
+        def __init__(self):
+            self.reset()
+
+        def reset(self):
+            self.buffer = ""
+            self.remaining = 0
+
+    request_state = BufferState()
+    response_state = BufferState()
+
+    MAX_LENGTH = 2**22
+
+    def on_request(self, request):
+        return self._handle_data(request, self.request_state)
+
+    def on_response(self, response):
+        return self._handle_data(response, self.response_state)
+
+    # This method returns the data that we should pass downstream. The data is
+    # either an empty string, or a complete HTTP request/response.
+    #
+    # We require HTTP requests or responses to start at the beginning of a
+    # message. If they don't, we return the trailing data unmodified.
+    def _handle_data(self, data, buffer_state):
+        if buffer_state.remaining > 0:
+            return self._handle_buffering(data, buffer_state)
+
+        # Check for the start of an HTTP request/response. This isn't perfect
+        # since we need at least the response up to the start of the body, but
+        # its better than nothing.
+        length = self._get_data_length(data)
+        if length <= 0:
+            return data
+        if length > self.MAX_LENGTH:
+            # Nope, not in my RAM.
+            return data
+        content_offset = data.find("\r\n\r\n")
+        # If we cannot find the content offset, skip this request/response.
+        if content_offset < 0:
+            return data
+        buffer_state.remaining = content_offset + length + len("\r\n\r\n")
+        return self._handle_buffering(data, buffer_state)
+
+    def _get_data_length(self, data):
+        response = util.http.parse_response(data)
+        if response:
+            return int(response.getheader("content-length", 0))
+        request = util.http.parse_request(data)
+        if request:
+            return int(request.headers.get("content-length", 0))
+
+    def _handle_buffering(self, data, buffer_state):
+        if len(data) >= buffer_state.remaining:
+            full_data = buffer_state.buffer + data
+            buffer_state.reset()
+            return full_data
+        else:
+            buffer_state.buffer += data
+            buffer_state.remaining -= len(data)
+            return ""
+
+
 @handler.passive(handlers)
 class HttpDetectionHandler(DataHandler):
 
