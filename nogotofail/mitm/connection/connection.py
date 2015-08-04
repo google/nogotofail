@@ -19,7 +19,7 @@ import logging
 import select
 import socket
 import struct
-from nogotofail.mitm.util import tls, ssl2
+from nogotofail.mitm.util import tls, ssl2, extras
 from nogotofail.mitm.util import close_quietly
 from nogotofail.mitm.util.tls.types import Extension
 import time
@@ -282,7 +282,7 @@ class BaseConnection(object):
             context.use_privatekey_file(handler_cert)
 
         # Required for anonymous/ephemeral DH cipher suites
-        context.load_tmp_dh("./dhparam")
+        context.load_tmp_dh(extras.get_extras_path("./dhparam"))
 
         # Required for anonymous/ephemeral ECDH cipher suites
         # The API is not available in the old version of pyOpenSSL which we

@@ -402,8 +402,8 @@ class ImageReplacement(_ResponseReplacement):
 
     name = "imagereplace"
     description = (
-        "Replace responses with Content-Type of image/* with ./replace.png")
-    file = "./replace.png"
+        "Replace responses with Content-Type of image/* with replace.png")
+    file = "replace.png"
     data = None
 
     def filter(self, response):
@@ -416,7 +416,7 @@ class ImageReplacement(_ResponseReplacement):
         resp = util.http.parse_response(response)
         headers = dict(resp.getheaders())
         if not ImageReplacement.data:
-            with open(self.file) as f:
+            with open(util.extras.get_extras_path(self.file)) as f:
                 ImageReplacement.data = f.read()
         old_length = int(headers.get("content-length", 0))
         length = len(self.data)

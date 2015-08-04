@@ -26,8 +26,11 @@ class InvalidHostnameMITM(SelfSignedMITM):
     description = (
         "Attempts to MiTM using a valid certificate for another domain."
         " NOTE: requires ./trusted-cert.pem have a valid cert and private key")
-    certificate = "./trusted-cert.pem"
+    certificate_file = "./trusted-cert.pem"
     vuln = util.vuln.VULN_TLS_INVALID_HOSTNAME
 
+    @property
+    def certificate(self):
+        return util.extras.get_extras_path(self.certificate_file)
     def on_certificate(self, server_cert):
         return self.certificate

@@ -1,5 +1,5 @@
 r'''
-Copyright 2014 Google Inc. All rights reserved.
+Copyright 2015 Google Inc. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,11 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import routing
-from ca import CertificateAuthority
-from ip import get_interface_addresses
-from constant import Constants
-from socket import close_quietly
-import vuln
-import http
-import extras
+import os
+
+extras_dir = None
+
+def get_extras_path(file_path):
+    """ Return a full path to file_path in the extras directory."""
+    if extras_dir is None:
+        return file_path
+    return os.path.join(extras_dir, file_path)

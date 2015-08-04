@@ -17,7 +17,7 @@ import tempfile
 import OpenSSL.crypto
 import os
 import random
-
+from nogotofail.mitm.util import extras
 
 class CertificateAuthority(object):
     """Simple CA for generating certs based on CNs and sans."""
@@ -25,10 +25,17 @@ class CertificateAuthority(object):
     def __init__(self, ca_file='ca.pem', cert_dir=tempfile.gettempdir()):
         self.ca_file = ca_file
         self.cert_dir = cert_dir
-        if not os.path.exists(ca_file):
+        self._loaded = False
+
+    def _ensure_loaded(self):
+        if self._loaded:
+            return
+        self.ca_file = extras.get_extras_path(self.ca_file)
+        if not os.path.exists(self.ca_file):
             self._generate_ca()
         else:
-            self._read_ca(ca_file)
+            self._read_ca(self.ca_file)
+        self._loaded = True
 
     def _generate_ca(self):
         self.key = OpenSSL.crypto.PKey()
@@ -120,6 +127,7 @@ class CertificateAuthority(object):
         san: The subject alt name to add to the certificate, or None
 
         Returns a path to a pem file containing the key and cert"""
+        self._ensure_loaded()
         path = os.path.sep.join([self.cert_dir, self._get_file_name(cn, san)])
         # TODO: Check that the cert at path is valid
         if not os.path.exists(path):
