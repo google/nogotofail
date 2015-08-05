@@ -23,6 +23,7 @@ import time
 import urllib
 
 from nogotofail.mitm.connection import handlers
+from nogotofail.mitm.connection.handlers import preconditions
 from nogotofail.mitm.util import close_quietly
 
 Application = namedtuple("Application", ["package", "version"])
@@ -255,17 +256,18 @@ class Client(object):
         if "Attacks" in headers:
             attacks = headers["Attacks"].split(",")
             attacks = map(str.strip, attacks)
-            client_info["Attacks"] = [
+            client_info["Attacks"] = preconditions.filter_preconditions([
                     handlers.connection.handlers.map[attack] for attack in attacks
-                    if attack in handlers.connection.handlers.map]
+                    if attack in handlers.connection.handlers.map])
 
         if "Data-Attacks" in headers:
             attacks = headers["Data-Attacks"].split(",")
             attacks = map(str.strip, attacks)
-            client_info["Data-Attacks"] = [handlers.data.handlers.map[attack]
+            client_info["Data-Attacks"] = preconditions.filter_preconditions(
+                    [handlers.data.handlers.map[attack]
                     for attack in attacks
                     if attack in
-                    handlers.data.handlers.map]
+                    handlers.data.handlers.map])
 
         # Store the raw headers as well in case a handler needs something the
         # client sent in an additional header

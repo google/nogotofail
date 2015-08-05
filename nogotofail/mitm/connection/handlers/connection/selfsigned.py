@@ -15,6 +15,7 @@ limitations under the License.
 '''
 import logging
 from nogotofail.mitm import util
+from nogotofail.mitm.connection.handlers import preconditions
 from nogotofail.mitm.connection.handlers.connection import LoggingHandler
 from nogotofail.mitm.connection.handlers.connection import handlers
 from nogotofail.mitm.connection.handlers.store import handler
@@ -86,6 +87,7 @@ class SelfSignedMITM(LoggingHandler):
         return self.certificate
 
 @handler(handlers, default=True)
+@preconditions.requires_files(files=["superfish.pem"])
 class SuperFishMITM(SelfSignedMITM):
     name = "superfishmitm"
     description = "Attempt a MiTM using the compromised superfish MITM CA"

@@ -13,8 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
+
 class BaseHandler(object):
 
+    # The string used to reference this handler. This will be shown in logs and --help
+    name = "handler"
     # Human readable description of what this handler does.
     # Should describe things like attacks
     description = "Basic connection handler. Does nothing but bridge traffic."
@@ -24,12 +27,6 @@ class BaseHandler(object):
     def __init__(self, connection):
         self.connection = connection
 
-    @property
-    def name(self):
-        """Returns the string used to describe this handler.
-        """
-        return self.__class__.__name__
-
     def on_request(self, request):
         """Called when the client sends a request to the server.
 
@@ -37,6 +34,18 @@ class BaseHandler(object):
         Returns the data to send to the server.
         """
         return request
+
+    @staticmethod
+    def check_precondition():
+        """Check if the handler is able to be used in the current run of nogotofail.
+        This should ensure that any required files exist and similar preconditions
+        to the handler being used.
+
+        Returns tuple (precondition_success, error_message)
+        precondition_success: if all preconditions are met
+        error_message: message to be logged explaining the failure if precondition_success is False.
+        """
+        return True, ""
 
     def on_inject_request(self, request):
         """Called when a handler is injecting a request to the server.

@@ -15,6 +15,7 @@ limitations under the License.
 '''
 import logging
 from nogotofail.mitm import util
+from nogotofail.mitm.connection.handlers import preconditions
 from nogotofail.mitm.connection.handlers.data import handlers
 from nogotofail.mitm.connection.handlers.data import ClientReportDetection
 from nogotofail.mitm.connection.handlers.data import DataHandler
@@ -397,6 +398,7 @@ class SSLStrip(_ResponseReplacement):
 
 
 @handler(handlers)
+@preconditions.requires_files(files=["replace.png"])
 class ImageReplacement(_ResponseReplacement):
     """Replace images downloaded over HTTP with replace.png.
     Useful for detecting mixed content and a bit of a laugh.
