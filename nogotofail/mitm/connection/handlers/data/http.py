@@ -49,10 +49,12 @@ class BufferedHttpHandler(DataHandler):
             self.buffer = ""
             self.remaining = 0
 
-    request_state = BufferState()
-    response_state = BufferState()
 
     MAX_LENGTH = 2**22
+
+    def on_select(self):
+        self.request_state = BufferedHttpHandler.BufferState()
+        self.response_state = BufferedHttpHandler.BufferState()
 
     def on_request(self, request):
         return self._handle_data(request, self.request_state)
