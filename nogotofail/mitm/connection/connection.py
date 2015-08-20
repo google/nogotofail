@@ -19,12 +19,13 @@ import logging
 import select
 import socket
 import struct
-from nogotofail.mitm.util import tls, ssl2
+from nogotofail.mitm.util import tls, ssl2, extras
 from nogotofail.mitm.util import close_quietly
 from nogotofail.mitm.util.tls.types import Extension
 import time
 import uuid
 import errno
+import os
 
 class ConnectionWrapper(object):
     """Wrapper around OpenSSL's Connection object to make recv act like socket.recv()
@@ -282,7 +283,11 @@ class BaseConnection(object):
             context.use_privatekey_file(handler_cert)
 
         # Required for anonymous/ephemeral DH cipher suites
-        context.load_tmp_dh("./dhparam")
+        params_path = extras.get_extras_path("./dhparam")
+        if os.path.exists(params_path):
+            context.load_tmp_dh(extras.get_extras_path("./dhparam"))
+        else:
+            self.logger.warning("Required file dhparam not found, anonymous/ephemeral DH cipher suites may not work")
 
         # Required for anonymous/ephemeral ECDH cipher suites
         # The API is not available in the old version of pyOpenSSL which we

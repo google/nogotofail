@@ -33,7 +33,7 @@ from nogotofail.mitm.blame import Server as AppBlameServer
 from nogotofail.mitm.connection import Server, RedirectConnection, SocksConnection, TproxyConnection
 from nogotofail.mitm.connection import handlers
 from nogotofail.mitm.looper import MitmLoop
-from nogotofail.mitm.util import routing
+from nogotofail.mitm.util import routing, extras
 
 LOG_FORMAT = logging.Formatter("%(asctime)-15s [%(levelname)s] %(message)s")
 EVENT_FORMAT = logging.Formatter("%(message)s")
@@ -235,6 +235,9 @@ def parse_args():
     parser.add_argument(
         "--mode", help="Traffic capture mode. Options are " + ", ".join(modes.keys()),
         choices=modes, metavar="MODE", action="store", default=default_mode)
+    parser.add_argument(
+        "-x", "--extrasdir", help="Directory containing extra files required by handlers",
+        default = "./")
     parser.set_defaults(**config)
     return parser.parse_args(argv)
 
@@ -289,6 +292,7 @@ def run():
 
     args = parse_args()
     setup_logging(args)
+    extras.extras_dir = args.extrasdir
 
     selector = build_selector(args.all)
     attack_cls = [handlers.connection.handlers.map[name]
