@@ -517,7 +517,7 @@ class BaseConnection(object):
         reading data from the server until we've successfully sent everything pending."""
         self._remaining_server_send_data = remaining
         self.set_select_fds(wlist=[self.server_socket])
-        self.client_bridge_fn = self._short_send_server_bridge_fn
+        self.server_bridge_fn = self._short_send_server_bridge_fn
 
     def _short_send_server_bridge_fn(self):
         data = self._remaining_server_send_data
