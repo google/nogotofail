@@ -111,6 +111,42 @@ class ServerHello(object):
         "Compression Method: %s\n"\
         "Extensions:\n%s\n" % (self.version, self.random, self.session_id, self.cipher, self.compression_method, extensions)
 
+class Certificate(object):
+    """Tls Certificate Handshake message(See RFC 5246)
+    """
+    # List of certificates, each certificate is an opaque array of bytes
+    certificates = None
+    def __init__(self, certificates):
+        self.certificates = certificates
+
+    @staticmethod
+    def from_stream(body):
+        # length is 24 bits, pad so struct will parse it as an int
+        num_certificates = struct.unpack_from("!I", "\x00" + body[:3])[0]
+        certificates, read_amt = parse.parse_tls_list(body[3:], num_certificates, Certificate._parse_certificate)
+        return Certificate(certificates), read_amt + 3
+
+    def to_bytes(self):
+        # Trim off the first byte as the length field is 3 bytes but "!I" gives 4.
+        return parse.to_tls_list(self.certificates, Certificate._write_certificate, "!I")[1:]
+
+    def __str__(self):
+        return ("Certificate:\n" +
+                "Number of certs: %d\n" % (len(self.certificates)) +
+                "\n".join(["\tCertificate %d: %s" % (i, cert.encode("hex")) for i, cert in enumerate(self.certificates)]))
+
+    @staticmethod
+    def _parse_certificate(buf):
+        length = struct.unpack_from("!I", "\x00" + buf[:3])[0]
+        data = buf[3:3+length]
+        if len(data) != length:
+            raise ValueError("Not enough data in buffer to parse certificate need %d bytes but read %d" % (length, len(data)))
+        return data, length + 3
+
+    @staticmethod
+    def _write_certificate(certificate_bytes):
+        return struct.pack("!I", len(certificate_bytes))[1:] + certificate_bytes
+
 
 class ClientHello(object):
 
@@ -245,6 +281,7 @@ class HandshakeMessage(object):
     type_map = {
         TYPE.CLIENT_HELLO: ClientHello,
         TYPE.SERVER_HELLO: ServerHello,
+        TYPE.CERTIFICATE: Certificate,
         TYPE.SERVER_HELLO_DONE: ServerHelloDone,
     }
 

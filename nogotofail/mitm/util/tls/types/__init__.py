@@ -17,7 +17,7 @@ from cipher import Cipher
 from compression_method import CompressionMethod
 from simple import Version, Random
 from extension import Extension
-from handshake import ClientHello, ServerHello, ServerHelloDone, HandshakeMessage, OpaqueMessage
+from handshake import ClientHello, ServerHello, Certificate, ServerHelloDone, HandshakeMessage, OpaqueMessage
 from change_cipher_spec import ChangeCipherSpec
 from alert import Alert
 
