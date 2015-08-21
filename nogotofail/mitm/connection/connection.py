@@ -263,10 +263,10 @@ class BaseConnection(object):
         self.server_bridge_fn = self._gen_ssl_connect_fn(connection,
                 self._on_server_ssl_established)
         connection.set_connect_state()
-        # Start the handshake
-        self.server_bridge_fn()
         # Stop selecting on the client until we are connected
         self.set_select_fds(rlist=[self.server_socket])
+        # Start the handshake
+        self.server_bridge_fn()
 
 
     def _start_client_ssl_connection(self):
@@ -304,10 +304,10 @@ class BaseConnection(object):
         self.client_socket = ConnectionWrapper(connection)
         self.client_bridge_fn = self._gen_ssl_connect_fn(connection,
                 self._on_client_ssl_established)
-        # Start the handshake
-        self.client_bridge_fn()
         # Only listen for client events until the connection is established
         self.set_select_fds(rlist=[self.client_socket])
+        # Start the handshake
+        self.client_bridge_fn()
 
     def _on_server_ssl_established(self):
         """Once the server is connected begin connecting the client"""
