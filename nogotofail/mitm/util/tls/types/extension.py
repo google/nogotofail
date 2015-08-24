@@ -43,6 +43,7 @@ name_map = {
     19: "client_certificate_type",
     20: "server_certificate_type",
     21: "padding",
+    23: "extended_master_secret",
     35: "SessionTicket",
     13172: "next_protocol_negotiation",
     30031: "Channel ID (old)",
