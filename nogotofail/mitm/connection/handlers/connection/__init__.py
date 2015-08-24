@@ -26,4 +26,3 @@ from dropssl import DropSSL
 from droptls import DropTLS
 from ccs import EarlyCCS
 from serverkeyreplace import ServerKeyReplacementMITM
-from noforwardsecrecy import NoForwardSecrecy
