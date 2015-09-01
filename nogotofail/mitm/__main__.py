@@ -32,6 +32,7 @@ import sys
 from nogotofail.mitm.blame import Server as AppBlameServer
 from nogotofail.mitm.connection import Server, RedirectConnection, SocksConnection, TproxyConnection
 from nogotofail.mitm.connection import handlers
+from nogotofail.mitm.connection.handlers import preconditions
 from nogotofail.mitm.looper import MitmLoop
 from nogotofail.mitm.util import routing, extras
 
@@ -297,7 +298,9 @@ def run():
     selector = build_selector(args.all)
     attack_cls = [handlers.connection.handlers.map[name]
                   for name in args.attacks]
+    attack_cls = preconditions.filter_preconditions(attack_cls, logger)
     data_cls = [handlers.data.handlers.map[name] for name in args.data]
+    data_cls = preconditions.filter_preconditions(data_cls, logger)
     ssl_selector = build_ssl_selector(attack_cls, args.probability, args.all)
     data_selector = build_data_selector(data_cls, args.all, prob_attack=args.probability)
 

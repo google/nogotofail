@@ -16,17 +16,19 @@ limitations under the License.
 from nogotofail.mitm.connection.handlers.connection import SelfSignedMITM
 from nogotofail.mitm.connection.handlers.connection import handlers
 from nogotofail.mitm.connection.handlers.store import handler
+from nogotofail.mitm.connection.handlers import preconditions
 from nogotofail.mitm import util
 
 
 @handler(handlers, default=True)
+@preconditions.requires_files(files=["trusted-cert.pem"])
 class InvalidHostnameMITM(SelfSignedMITM):
 
     name = "invalidhostname"
     description = (
         "Attempts to MiTM using a valid certificate for another domain."
         " NOTE: requires ./trusted-cert.pem have a valid cert and private key")
-    certificate_file = "./trusted-cert.pem"
+    certificate_file = "trusted-cert.pem"
     vuln = util.vuln.VULN_TLS_INVALID_HOSTNAME
 
     @property
