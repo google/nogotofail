@@ -199,13 +199,43 @@ OpenVPN as there is lots of documentation for how to set up an OpenVPN server.
 Our main setup has been OpenVPN running on a Google Compute Engine instance. See instructions in
 [gce/readme.md](gce/readme.md).
 
-
 ####Testing Android
 For testing Android devices we have included our [Android client](/nogotofail/clients/android) ready
 to be imported into Eclipse. You will have to build the app and install it on your test device.
 
 For testing you can use the access point nogotofail setups or on  devices >=JB you can use
 the OpenVPN setup and a third party VPN application to route your traffic.
+
+
+#####Getting on path on a Linux machine
+On a Linux machine with the following example topology:
+
+
+    -------------            ----------            ----------
+    |test device|--------eth1|MiTM box|eth0--------|internet|
+    -------------            ----------            ----------
+
+
+First enable IP forwarding
+
+    $ echo 1 > /proc/sys/net/ipv4/ip_forward
+
+Next set up eth1 with an IP address
+
+    $ ifconfig eth1 10.0.0.1
+
+Then set up NAT on the device
+
+    $ iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+
+Finally run dnsmasq for DNS and DHCP:
+
+    $ dnsmasq eth1
+
+
+Now traffic will be flowing through the MiTM box from the test device to the
+Internet.
+
 
 ###Now you’re on path
 
