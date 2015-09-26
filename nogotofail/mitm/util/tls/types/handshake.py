@@ -16,6 +16,7 @@ limitations under the License.
 from nogotofail.mitm.util import Constants
 from nogotofail.mitm.util.tls.types import parse
 from nogotofail.mitm.util.tls.types import Cipher, Extension, Version, Random, CompressionMethod
+from nogotofail.mitm.util.tls.types import TlsNotEnoughDataError
 import base64
 import struct
 
@@ -140,7 +141,7 @@ class Certificate(object):
         length = struct.unpack_from("!I", "\x00" + buf[:3])[0]
         data = buf[3:3+length]
         if len(data) != length:
-            raise ValueError("Not enough data in buffer to parse certificate need %d bytes but read %d" % (length, len(data)))
+            raise ValueError("Not enough data to parse certificate")
         return data, length + 3
 
     @staticmethod
@@ -294,9 +295,12 @@ class HandshakeMessage(object):
         # Parse The Handshake. Length is 24bits which struct doesn't support
         # well.
         msg_type, length = struct.unpack("!BI", body[0] + "\x00" + body[1:4])
+        # sanity check
+        if msg_type not in name_map:
+            raise ValueError("Unknown HanshakeMessage type %d" % msg_type)
         body = body[4:4 + length]
         if length != len(body):
-            raise ValueError("Not enough data in body")
+            raise TlsNotEnoughDataError()
         # Check this is a supported type
         type = HandshakeMessage.type_map.get(msg_type, OpaqueMessage)
         obj, size = type.from_stream(body)

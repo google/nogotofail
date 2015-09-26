@@ -16,20 +16,41 @@ limitations under the License.
 import struct
 from nogotofail.mitm.util.tls import types
 
+def parse_tls(message, throw_on_incomplete=False):
+    """Try and parse a TLS record. If the message is fragmented over multiple TLS records this
+    will return one TLS record with the defragmented payload
 
-def parse_tls(message, enforce_length=True):
-    """Try and parse a TLS Record from message.
+    Arguments:
+    message -- wire representation of a TLS message.
+    throw_on_incomplete -- throw a TlsRecordIncompleteError or TlsMessageFragmentedError if
+        message is not complete, otherwise return None
 
-    Message should be the byte representation of a TLS Record.
-    Returns a nogotofail.mitm.util.tls.TlsRecord on success or None or error.
-    If enforce_length is True then parse_tls will return None if there are bytes
-    remaining in
-    message after parsing the record.
+    Returns (nogotofail.mitm.util.tls.TlsRecord, remaining_message) if message consumed
+        or None, message if parsing was unsuccessful
     """
+    extra_fragment_data = ""
+    original_message = message
     try:
-        record, size = types.TlsRecord.from_stream(message)
-        if enforce_length and size != len(message):
-            return None
-        return record
-    except (IndexError, ValueError, struct.error) as e:
-        return None
+        while message:
+            try:
+                record, size = types.TlsRecord.from_stream(message,
+                        previous_fragment_data=extra_fragment_data)
+                return record, message[size:]
+            except types.TlsMessageFragmentedError as e:
+                # If we're fragmented try and keep parsing
+                extra_fragment_data += e.fragment_data
+                message = message[e.data_consumed:]
+                # If we're fragmented but out of data error out
+                if not message:
+                    if throw_on_incomplete:
+                        raise e
+                    else:
+                        return None, original_message
+    except (IndexError, ValueError, struct.error):
+        return None, original_message
+    except types.TlsRecordIncompleteError as e:
+        if throw_on_incomplete:
+            raise e
+        else:
+            return None, original_message
+    return None, original_message
