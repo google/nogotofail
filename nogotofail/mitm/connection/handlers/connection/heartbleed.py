@@ -36,9 +36,9 @@ class ClientHeartbleedHandler(LoggingHandler):
     def on_request(self, request):
         # parse out request and check for heartbeat
         try:
-            index = 0
-            while index < len(request):
-                record, size = tls.types.TlsRecord.from_stream(request[index:])
+            remaining = request
+            while remaining:
+                record, remaining = tls.parse_tls(remaining)
                 if record.content_type == TlsRecord.CONTENT_TYPE.HEARTBEAT:
                     self.log(logging.CRITICAL, "Heartbleed response received")
                     self.log_event(
@@ -49,7 +49,6 @@ class ClientHeartbleedHandler(LoggingHandler):
                     self.connection.vuln_notify(
                         util.vuln.VULN_TLS_CLIENT_HEARTBLEED)
                     self.success = True
-                index += size
         except:
             pass
         return request
@@ -66,11 +65,11 @@ class ClientHeartbleedHandler(LoggingHandler):
     def on_response(self, response):
         if self.first:
             try:
-                record, size = tls.types.TlsRecord.from_stream(response)
+                record, remaining = tls.parse_tls(response)
                 version = record.version
-                response = (response[:size]
+                response = (record.to_bytes()
                             + self.heartbleed % (version.to_bytes())
-                            + response[size:])
+                            + remaining)
             except:
                 self.log(logging.INFO, "Failed to parse TLS record from server")
             self.first = False
