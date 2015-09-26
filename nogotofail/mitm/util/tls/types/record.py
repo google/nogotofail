@@ -16,6 +16,7 @@ limitations under the License.
 from nogotofail.mitm.util import Constants
 from nogotofail.mitm.util.tls.types import parse
 from nogotofail.mitm.util.tls.types import HandshakeMessage, Version, ChangeCipherSpec, Alert
+from nogotofail.mitm.util.tls.types import TlsRecordIncompleteError, TlsMessageFragmentedError, TlsNotEnoughDataError
 import base64
 import struct
 
@@ -46,25 +47,38 @@ class TlsRecord(object):
         self.messages = messages
 
     @staticmethod
-    def from_stream(body):
+    def from_stream(body, previous_fragment_data=""):
         # Parse the TLS Record
         content_type, version_major, version_minor, length = (
             struct.unpack_from("!BBBH", body, 0))
+        # Sanity checks
+        if version_major != 3 or version_minor > 3:
+            raise ValueError("Bad TLS Version for SSL3-TLS1.2 parsing")
+        if content_type not in name_map:
+            raise ValueError("Unknown content type %d" % content_type)
+
         fragment = body[5:5 + length]
-        # Sanity check
-        if length != len(fragment):
-            raise ValueError("Not enough data in fragment")
-        # Check this is a Handshake message
+        original_fragment = fragment
+        # Merge in any old fragmented data
+        fragment = previous_fragment_data + fragment
+        if len(fragment) < length:
+            raise TlsRecordIncompleteError(len(fragment), length)
+        # Start parsing the objects from the record
         type = TlsRecord.type_map.get(content_type, OpaqueFragment)
         objs = []
-        if fragment == "":
-            obj, size = type.from_stream(fragment)
-            objs.append(obj)
+        try:
+            if fragment == "":
+                obj, size = type.from_stream(fragment)
+                objs.append(obj)
 
-        while fragment != "":
-            obj, size = type.from_stream(fragment)
-            objs.append(obj)
-            fragment = fragment[size:]
+            while fragment != "":
+                obj, size = type.from_stream(fragment)
+                objs.append(obj)
+                fragment = fragment[size:]
+        except TlsNotEnoughDataError:
+            # In the event of not enough data throw what we have up to a higher
+            # level
+            raise TlsMessageFragmentedError(original_fragment, 5 + length)
         return TlsRecord(content_type, Version(version_major, version_minor),
                          objs), 5 + length
 

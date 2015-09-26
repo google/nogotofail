@@ -360,7 +360,7 @@ class BaseConnection(object):
         Returns if client_request was used(and should not be sent to the server)
         """
         # check for a TLS Client Hello
-        record = tls.parse_tls(client_request)
+        record, ignored = tls.parse_tls(client_request)
         client_hello = None
         if record:
             first = record.messages[0]
