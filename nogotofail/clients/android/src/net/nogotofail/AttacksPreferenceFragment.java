@@ -49,6 +49,7 @@ public class AttacksPreferenceFragment extends PreferenceFragment {
     BUNDLED_SUPPORTED_DATA_ATTACK_IDS.add("httpdetection");
     BUNDLED_SUPPORTED_DATA_ATTACK_IDS.add("imagereplace");
     BUNDLED_SUPPORTED_DATA_ATTACK_IDS.add("sslstrip");
+    BUNDLED_SUPPORTED_DATA_ATTACK_IDS.add("noforwardsecrecy");
   }
 
   private static final String ATTACK_ENABLED_PREF_KEY_PREFIX = "attack_enabled_";
