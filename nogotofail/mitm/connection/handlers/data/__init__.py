@@ -21,6 +21,7 @@ handlers = store.HandlerStore()
 
 from report import ClientReportDetection
 from log import RawTrafficLogger
+from mitm import SslMitmHandler
 from http import *
 from imap import *
 from smtp import *
