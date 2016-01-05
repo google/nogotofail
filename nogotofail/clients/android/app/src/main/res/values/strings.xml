@@ -95,6 +95,9 @@
     <!-- Vulnerability: XMPP STARTTLS strip -->
     <string name="vuln_xmppstarttlsstrip">Downgrade of STARTTLS-protected XMPP to cleartext</string>
 
+    <!-- Vulnerability: PII detected in HTTP content -->
+    <string name="vuln_httppii">Cleartext PII detected in HTTP content</string>
+
     <string name="notifications_pref_screen_title">Notifications</string>
     <string name="vuln_notifications_enabled_pref_title">Notifications</string>
     <string name="vuln_notifications_enabled_pref_summary">Notify about detected vulnerabilities</string>
@@ -159,6 +162,9 @@
     <string name="attack_summary_xmppauthdetection">XMPP credentials/auth token compromise</string>
     <string name="attack_title_xmppstarttlsstrip">XMPP STARTTLS strip</string>
     <string name="attack_summary_xmppstarttlsstrip">Downgrade of STARTTLS-protected XMPP to cleartext</string>
+
+    <string name="attack_title_httppii">Cleartext PII in HTTP content</string>
+    <string name="attack_summary_httppii">Cleartext PII appears in HTTP content</string>
 
     <string name="advanced_pref_screen_title">Advanced</string>
 

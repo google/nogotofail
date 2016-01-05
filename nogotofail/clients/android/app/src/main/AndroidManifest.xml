@@ -32,6 +32,15 @@
     <!-- Needed to vibrate during notifications on older platforms. -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- Needed to retrieve the devices Device ID (IMEI, MEID etc) -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+
+    <!-- Needed to retrieve the devices Wi-Fi adapter MAC address -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <!-- Needed to retrieve last known location -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
     <application
         android:name=".NoGotoFailApplication"
         android:allowBackup="true"
