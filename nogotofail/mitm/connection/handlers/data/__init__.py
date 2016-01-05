@@ -22,6 +22,7 @@ handlers = store.HandlerStore()
 from report import ClientReportDetection
 from log import RawTrafficLogger
 from http import *
+from httppii import *
 from imap import *
 from smtp import *
 from xmpp import *

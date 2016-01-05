@@ -13,14 +13,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 '''
-import routing
-from ca import CertificateAuthority
-from ip import get_interface_addresses
-from constant import Constants
-from socket import close_quietly
-import vuln
-import http
-from miscellaneous import *
-from pii import *
-from httppii import *
-import extras
+
+""" Module contains miscellaneous utility functions.
+"""
+
+
+def truncate(f, n):
+    """ Truncates/pads a float f to n decimal places without rounding and
+        returns a string """
+    s = '{}'.format(f)
+    if 'e' in s or 'E' in s:
+        return '{0:.{1}f}'.format(f, n)
+    i, p, d = s.partition('.')
+    return '.'.join([i, (d+'0'*n)[:n]])

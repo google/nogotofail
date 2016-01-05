@@ -156,6 +156,45 @@ class HttpAuthHandler(HttpDetectionHandler):
             self.connection.vuln_notify(util.vuln.VULN_CLEARTEXT_AUTH)
 
 
+class HttpContentHandler(DataHandler):
+    """ Provides methods for parsing the content of plaintext HTTP request and
+        response objects. """
+
+    ssl = False
+
+    def on_ssl(self, client_hello):
+        self.ssl = True
+        return True
+
+    def on_request(self, request):
+        http = util.http.parse_request(request)
+        if http and not self.ssl and not http.error_code:
+            host = http.headers.get("host", self.connection.server_addr)
+            if not self.connection.hostname:
+                self.connection.hostname = host
+            http_request = util.http.HTTPRequestWrapper(http)
+            self.on_http_request(http_request)
+        return request
+
+    def on_http_request(self, http_request):
+        comment = "Code to be added in class inheriting this."
+
+    def on_response(self, response):
+        http = util.http.parse_response(response)
+        if http:
+            headers = dict(http.getheaders())
+            host = headers.get("host", self.connection.server_addr)
+            if not self.connection.hostname:
+                self.connection.hostname = host
+            if not self.connection.ssl:
+                http_response = util.http.HTTPResponseWrapper(http)
+                self.on_http_response(http_response)
+        return response
+
+    def on_http_response(self, http_response):
+        comment = "Code to be added in class inheriting this."
+
+
 class _HttpReqReplacement(DataHandler):
     """Basic class for replacing the conents of a HTTP Request
     """

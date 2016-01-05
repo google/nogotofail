@@ -15,6 +15,7 @@ limitations under the License.
 '''
 from nogotofail.mitm.event.base import Event
 
+import logging
 
 class ApplicationEvent(Event):
     """Event relating to nogotofail.mitm itself.
