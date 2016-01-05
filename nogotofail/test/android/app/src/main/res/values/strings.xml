@@ -32,5 +32,13 @@
         HTTPS request without server authentication
     </string>
 
-    <string name="test_http_with_authorization">HTTP request with Authorization header</string>
+    <string name="test_http_with_authorization">
+        HTTP request with Authorization header
+    </string>
+    <string name="test_http_pii">
+        PII in HTTP traffic
+    </string>
+    <string name="test_https_pii">
+        PII in HTTPS traffic
+    </string>
 </resources>

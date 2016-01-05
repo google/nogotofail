@@ -8,6 +8,7 @@ WORKSPACE
 # Generated files
 bin/
 gen/
+*.apk
 
 # Gradle files
 .gradle/
