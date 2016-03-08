@@ -69,7 +69,7 @@ class ServerKeyReplacementMITM(LoggingHandler):
                     if ext.type == Extension.TYPE.SESSIONTICKET:
                         ext.raw_data = []
                 # Retain in ClientHello only cipher suites which require the
-                # server to send a ServerKeyExchange message: emphemeral (EC)DH
+                # server to send a ServerKeyExchange message: ephemeral (EC)DH
                 # and RSA_EXPORT cipher suites. Also retain pseudo/signalling
                 # cipher suites because they don't affect this attack/test.
                 hello.ciphers = [c for c in hello.ciphers
