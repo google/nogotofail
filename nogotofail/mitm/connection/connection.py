@@ -661,6 +661,35 @@ class BaseConnection(object):
                 break
         self.client_socket.sendall(response)
 
+class ReverseProxyConnection(BaseConnection):
+    """Connection based on reverse proxy"""
+
+    def start(self):
+        """Setup the remote end of the connection and client connection
+        to be ready to start bridging traffic.
+
+        This method should be implemented based on how connections are routed to nogotofail.mitm
+        such as iptables redirect or proxies.
+
+        This should call handler.on_select and handler.on_establish when appropriate
+        and set server_addr and server_port to the remote endpoint's address."""
+        self.server_addr, self.server_port = ReverseProxyConnection.target_addr, ReverseProxyConnection.target_port
+
+        self.handler.on_select()
+        for handler in self.data_handlers:
+            handler.on_select()
+        try:
+            self._start_server_connect_nonblocking()
+        except socket.error:
+            return False
+        return True
+
+    def _get_client_remote_name(self):
+        """Get the addr, port of the what the client thinks is their remote
+        This is used for blame, so this should correspond to some tcp connection
+        on the client"""
+        return self.client_socket.getsockname()[:2]
+
 class RedirectConnection(BaseConnection):
     """Connection based on getting traffic from iptables redirect rules"""
 
