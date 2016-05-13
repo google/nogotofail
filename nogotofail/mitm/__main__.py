@@ -128,6 +128,11 @@ def set_tproxy_rules(args):
     atexit.register(routing.disable_tproxy_rules, ipv6=ipv6)
 
 def set_reverse_rules(args):
+    if args.target_addr is None:
+        raise ValueError("Target address is required")
+    if args.target_port < 1 or args.target_port > 65535:
+        raise ValueError("Target port must be between 1 and 65535")
+
     ReverseProxyConnection.target_addr = args.target_addr
     ReverseProxyConnection.target_port = args.target_port
 
@@ -320,7 +325,12 @@ def run():
         signal.signal(signal.SIGTERM, sigterm_handler)
         mode = modes[args.mode]
         if mode.setup:
-            mode.setup(args)
+            try:
+                mode.setup(args)
+            except ValueError as e:
+                print("Error: %s" % e.message)
+                sys.exit(2)
+
         blame = (
             build_blame(
                 args.cport, args.serverssl, args.probability, attack_cls,
