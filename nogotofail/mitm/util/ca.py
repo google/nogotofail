@@ -46,7 +46,7 @@ class CertificateAuthority(object):
         self.cert.set_serial_number(1)
         self.cert.get_subject().CN = 'ca.nogotofail'
         self.cert.set_notBefore("19300101000000+0000")
-        self.cert.set_notAfter("203012310000+0000")
+        self.cert.set_notAfter("20301231000000+0000")
         self.cert.set_issuer(self.cert.get_subject())
         self.cert.set_pubkey(self.key)
         self.cert.add_extensions([
@@ -95,7 +95,7 @@ class CertificateAuthority(object):
         cert.set_serial_number(random.randint(0, 2**20))
         # Use a huge range so we dont have to worry about bad clocks
         cert.set_notBefore("19300101000000+0000")
-        cert.set_notAfter("203012310000+0000")
+        cert.set_notAfter("20301231000000+0000")
         cert.set_issuer(self.cert.get_subject())
         if san:
             cert.add_extensions([san])
