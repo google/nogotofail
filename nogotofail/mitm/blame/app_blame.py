@@ -16,15 +16,14 @@ limitations under the License.
 from collections import namedtuple
 import logging
 import socket
-import select
-import sys
 import ssl
 import time
 import urllib
+import ast
 
 from nogotofail.mitm.connection import handlers
 from nogotofail.mitm.connection.handlers import preconditions
-from nogotofail.mitm.util import close_quietly
+from nogotofail.mitm.util import close_quietly, truncate, PiiStore
 
 Application = namedtuple("Application", ["package", "version"])
 
@@ -56,6 +55,7 @@ class Client(object):
         self.address = self.socket.getpeername()[0]
         self.logger = logging.getLogger("nogotofail.mitm")
         self._handshake_completed = False
+        self.pii_store = None
 
     @property
     def available(self):
@@ -236,6 +236,7 @@ class Client(object):
         self.socket.sendall("\n")
 
     def _parse_headers(self, lines):
+        # try:
         raw_headers = [line.split(":", 1) for line in lines[1:]]
         headers = {entry.strip(): header.strip()
                    for entry, header in raw_headers}
@@ -257,17 +258,37 @@ class Client(object):
             attacks = headers["Attacks"].split(",")
             attacks = map(str.strip, attacks)
             client_info["Attacks"] = preconditions.filter_preconditions([
-                    handlers.connection.handlers.map[attack] for attack in attacks
-                    if attack in handlers.connection.handlers.map])
+                handlers.connection.handlers.map[attack]
+                for attack in attacks
+                if attack in handlers.connection.handlers.map])
 
         if "Data-Attacks" in headers:
             attacks = headers["Data-Attacks"].split(",")
             attacks = map(str.strip, attacks)
             client_info["Data-Attacks"] = preconditions.filter_preconditions(
-                    [handlers.data.handlers.map[attack]
-                    for attack in attacks
-                    if attack in
-                    handlers.data.handlers.map])
+                [handlers.data.handlers.map[attack]
+                for attack in attacks
+                if attack in handlers.data.handlers.map])
+
+        if ("PII-Items" in headers):
+            client_pii_items = ast.literal_eval(headers["PII-Items"])
+
+        # TODO: Think if HTML encoding is needed for PII information.
+        # e.g. ',",&,<,> characters.
+        if ("PII-Location" in headers):
+            client_pii_location = {}
+            # Convert personal location string to a dictionary
+            personal_location = ast.literal_eval(headers["PII-Location"])
+            if (personal_location):
+                longitude = personal_location.get("longitude", "0.00000")
+                latitude = personal_location.get("latitude", "0.00000")
+            else:
+                longitude = "0.00000"
+                latitude = "0.00000"
+            client_pii_location["longitude"] = \
+                truncate(float(longitude), 2)
+            client_pii_location["latitude"] = \
+                truncate(float(latitude), 2)
 
         # Store the raw headers as well in case a handler needs something the
         # client sent in an additional header
@@ -275,11 +296,18 @@ class Client(object):
 
         self.info = client_info
 
+        # Merge client and server pii items.
+        server_pii_items = self.server.pii["items"]
+        merge_pii_ids = client_pii_items.copy()
+        merge_pii_ids.update(server_pii_items)
+        # Create pii_store attribute which holds pii items.
+        self.pii_store = PiiStore(merge_pii_ids, client_pii_location)
+
     def _response_select_fn(self):
         try:
             data = self.socket.recv(8192)
         except socket.error:
-            self.logger.info("Blame: Erorr reading from client %s.", self.address)
+            self.logger.info("Blame: Error reading from client %s.", self.address)
             return False
 
         if not data:
@@ -311,7 +339,8 @@ class Server:
     port = None
     clients = None
 
-    def __init__(self, port, cert, default_prob, default_attacks, default_data):
+    def __init__(self, port, cert, default_prob, default_attacks, default_data,
+        config_pii):
         self.txid = 0
         self.kill = False
         self.port = port
@@ -323,6 +352,8 @@ class Server:
         self.fd_map = {}
         self.logger = logging.getLogger("nogotofail.mitm")
         self.server_socket = None
+        # Server config pii parameters
+        self.pii = config_pii
 
     def start_listening(self):
         self.server_socket = socket.socket()
@@ -455,3 +486,11 @@ class Server:
                 client.close()
             except:
                 pass
+
+    def get_pii(self):
+        """ Function return server config pii values.
+        """
+        if (self.pii):
+            return self.pii
+        else:
+            return {}

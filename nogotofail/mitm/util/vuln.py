@@ -30,3 +30,5 @@ VULN_WEAK_CIPHER = "weakcipher"
 VULN_WEAK_TLS_VERSION = "weaktlsversion"
 VULN_TLS_SERVER_KEY_REPLACEMENT = "serverkeyreplace"
 VULN_TLS_SUPERFISH_TRUSTED = "superfishca"
+
+VULN_CLEARTEXT_HTTP_PII = "httppii"

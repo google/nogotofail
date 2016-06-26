@@ -661,6 +661,7 @@ class BaseConnection(object):
                 break
         self.client_socket.sendall(response)
 
+
 class RedirectConnection(BaseConnection):
     """Connection based on getting traffic from iptables redirect rules"""
 
@@ -833,5 +834,3 @@ class SocksConnection(BaseConnection):
             sock.sendall(self._build_error_response(SocksConnection.RESP_GENERAL_ERROR))
             raise ValueError("Unknown ATYP")
         return addr, port
-
-
