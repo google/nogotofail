@@ -141,8 +141,7 @@ class ServerKeyReplacementMITM(LoggingHandler):
                             remaining)
                         self.signature_tampered = True
                         return response
-                    else:
-                        new_response += record.to_bytes()
+                new_response += record.to_bytes()
 
         except tls.types.TlsNotEnoughDataError:
             # Failed to parse TLS, this is probably due to a short read of a TLS
