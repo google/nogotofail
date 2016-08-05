@@ -61,12 +61,14 @@ class EarlyCCS(LoggingHandler):
                 # so we accept that as well. Morever, if the client doesn't like the TLS
                 # protocol version chosen by the server (regardless of whether early
                 # CCS is injected), the client will send a fatal alert
-                # protocol_version (70).
+                # protocol_version (70) or handshake_failure (40).
                 if not (
                     isinstance(message, tls.types.Alert) and
                        ((message.description == Alert.DESCRIPTION.UNEXPECTED_MESSAGE and
                            message.level == Alert.LEVEL.FATAL) or
                        (message.description == Alert.DESCRIPTION.PROTOCOL_VERSION and
+                           message.level == Alert.LEVEL.FATAL) or
+                       (message.description == Alert.DESCRIPTION.HANDSHAKE_FAilURE and
                            message.level == Alert.LEVEL.FATAL) or
                        message.description == Alert.DESCRIPTION.CLOSE_NOTIFY)):
                     self.log(
