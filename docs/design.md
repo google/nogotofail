@@ -1,4 +1,4 @@
-#Design Goals
+# Design Goals
 
 
 Nogotofail was designed to be an automated, powerful, flexible and scalable tool
@@ -20,13 +20,13 @@ such that it does not get in the way of using devices as normal. Tests
 that are destructive are by default run only when necessary and with low
 probability.
 
-##The building blocks of nogotofail
+## The building blocks of nogotofail
 
 Nogotofail is centered around an on path man in the middle tool written in python
 with an optional client application to provide additional attribution and
 configuration support.
 
-###Man in The Middle
+### Man in The Middle
 
 The core of nogotofail is the on path network MiTM named nogotofail.mitm that
 intercepts TCP traffic. It is designed to primarily run on path and centers
@@ -36,7 +36,7 @@ nogotofail is completely port agnostic and instead detects vulnerable traffic
 using DPI instead of based on port numbers. Additionally, because it uses DPI,
 it is capable of testing TLS/SSL traffic in protocols that use STARTTLS.
 
-####Why attack probabilistically?
+#### Why attack probabilistically?
 
 Nogotofail does not destructively attack all TLS/SSL connections it sees because
 such attacks lead to non-vulnerable clients aborting attacked connections. If
@@ -56,15 +56,15 @@ devices we’ve seen tend to work as usual.
 Of course, if you want to test a specific connection aggressively you can push
 the probability up to 100%.
 
-####Protocol sensing
+#### Protocol sensing
 
 Protocol sensing for a TLS/SSL testing tool is critical because only attacking
 traffic on port 443 has two flaws. First, it misses TLS/SSL traffic on
 non-standard ports, and second, it fails to test protocols that use STARTTLS.
 
-###Client *(optional)*
+### Client *(optional)*
 
-####Why have a client?
+#### Why have a client?
 
 When testing on real devices it can be very difficult to determine what component or app made a
 vulnerable connection. Even seeing the contents and the destination isn’t always
@@ -83,7 +83,7 @@ Finally, the client receives notifications of vulnerabilities from the MiTM. Thi
 were issues, and it helps you understand exactly what action triggered the
 vulnerability.
 
-####What the client does
+#### What the client does
 
 The client exists to provide additional details about connections, allow the
 client to configure attack settings, and to be notified when vulnerabilities are
