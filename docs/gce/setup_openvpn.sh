@@ -20,13 +20,13 @@ echo "Generating server public key pair and certificate..."
 openssl genrsa -out $CONFIG_DIR/server_key.pem 2048
 openssl req -new -key $CONFIG_DIR/server_key.pem -out $CONFIG_DIR/server_csr.pem -subj '/CN=server.vpn.nogotofail'
 chmod 600 $CONFIG_DIR/server_key.pem
-openssl x509 -req -in $CONFIG_DIR/server_csr.pem -CA $CONFIG_DIR/ca_cert.pem -CAkey $CONFIG_DIR/ca_key.pem -CAcreateserial -out $CONFIG_DIR/server_cert.pem -sha256 -days 365
+openssl x509 -req -in $CONFIG_DIR/server_csr.pem -CA $CONFIG_DIR/ca_cert.pem -CAkey $CONFIG_DIR/ca_key.pem -CAcreateserial -out $CONFIG_DIR/server_cert.pem -sha256 -days 365 -extfile openvpn-server-cert-extfile.cfg
 rm $CONFIG_DIR/server_csr.pem
 
 echo "Generating client public key pair and certificate..."
 openssl genrsa -out $CONFIG_DIR/client_key.pem 2048
 openssl req -new -key $CONFIG_DIR/client_key.pem -out $CONFIG_DIR/client_csr.pem -subj '/CN=client.vpn.nogotofail'
-openssl x509 -req -in $CONFIG_DIR/client_csr.pem -CA $CONFIG_DIR/ca_cert.pem -CAkey $CONFIG_DIR/ca_key.pem -CAcreateserial -out $CONFIG_DIR/client_cert.pem -sha256 -days 365
+openssl x509 -req -in $CONFIG_DIR/client_csr.pem -CA $CONFIG_DIR/ca_cert.pem -CAkey $CONFIG_DIR/ca_key.pem -CAcreateserial -out $CONFIG_DIR/client_cert.pem -sha256 -days 365 -extfile openvpn-client-cert-extfile.cfg
 rm $CONFIG_DIR/client_csr.pem
 
 openssl dhparam 2048 > $CONFIG_DIR/dhparam2048.pem
