@@ -29,8 +29,6 @@ openssl req -new -key $CONFIG_DIR/client_key.pem -out $CONFIG_DIR/client_csr.pem
 openssl x509 -req -in $CONFIG_DIR/client_csr.pem -CA $CONFIG_DIR/ca_cert.pem -CAkey $CONFIG_DIR/ca_key.pem -CAcreateserial -out $CONFIG_DIR/client_cert.pem -sha256 -days 365 -extfile openvpn-client-cert-extfile.cfg
 rm $CONFIG_DIR/client_csr.pem
 
-openssl dhparam 2048 > $CONFIG_DIR/dhparam2048.pem
-
 cp "$SRC_DIR/openvpn.conf" $CONFIG_DIR/
 
 # Determine external IP address of this host.

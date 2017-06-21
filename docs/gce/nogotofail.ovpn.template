@@ -20,6 +20,4 @@ comp-lzo
 remote-cert-tls server
 
 # Symmetric tunnel crypto config
-auth SHA256
-cipher AES-128-CBC
-keysize 128
+cipher AES-128-GCM
