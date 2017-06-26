@@ -3,8 +3,7 @@ proto udp
 client
 verb 4
 dev tun
-tun-ipv6
-redirect-gateway
+redirect-gateway ipv6
 
 # keepalive 60 120
 ping 60
