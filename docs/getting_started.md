@@ -21,7 +21,7 @@ For example the OpenSSL command to generate such a certificate is:
 The Invalid hostname attack attempts a MiTM by presenting a trusted certificate
 for another domain name. For example a trusted certificate for evil.com being
 presented for a connection to example.com. If the application does not do
-hostname verification correctly it will incorrect trust the MiTM. This has
+hostname verification correctly, it will incorrectly trust the MiTM. This has
 historically been one of the common SSL issues besides not checking chain of
 trust of SSL certificates.  To test for this issue you will need to provide a
 trusted certificate chain for an arbitrary domain. You have two options for how
