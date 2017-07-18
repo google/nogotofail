@@ -719,13 +719,16 @@ class RedirectConnection(BaseConnection):
         return True
 
     def _get_original_dest(self, sock):
+        family = sock.family
         SO_ORIGINAL_DST = 80
-        dst = sock.getsockopt(socket.SOL_IP, SO_ORIGINAL_DST, 28)
-        family = struct.unpack_from("H", dst)[0]
         # Parse the raw_ip and raw port from the struct sockaddr_in/in6
         if family == socket.AF_INET:
+            dst = sock.getsockopt(socket.SOL_IP, SO_ORIGINAL_DST, 28)
             raw_port, raw_ip = struct.unpack_from("!2xH4s", dst)
         elif family == socket.AF_INET6:
+            # From socket.h
+            SOL_IPV6 = 41
+            dst = sock.getsockopt(SOL_IPV6, SO_ORIGINAL_DST, 64)
             raw_port, raw_ip = struct.unpack_from("!2xH4x16s", dst)
         else:
             raise ValueError("Unsupported sa_family_t %d" % family)
