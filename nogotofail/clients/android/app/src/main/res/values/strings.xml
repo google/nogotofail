@@ -94,6 +94,8 @@
     <string name="vuln_sslstrip">Downgrade of HTTPS to HTTP</string>
     <!-- Vulnerability: XMPP STARTTLS strip -->
     <string name="vuln_xmppstarttlsstrip">Downgrade of STARTTLS-protected XMPP to cleartext</string>
+    <!-- Vulnerability: Cipher key exchange doesn't support forward secrecy -->
+    <string name="vuln_noforwardsecrecy">Cipher key exchange doesn\'t support forward secrecy</string>
 
     <string name="notifications_pref_screen_title">Notifications</string>
     <string name="vuln_notifications_enabled_pref_title">Notifications</string>
@@ -159,7 +161,9 @@
     <string name="attack_summary_xmppauthdetection">XMPP credentials/auth token compromise</string>
     <string name="attack_title_xmppstarttlsstrip">XMPP STARTTLS strip</string>
     <string name="attack_summary_xmppstarttlsstrip">Downgrade of STARTTLS-protected XMPP to cleartext</string>
-
+    <string name="attack_title_noforwardsecrecy">Cipher key exchange doesn\'t support forward secrecy</string>
+    <string name="attack_summary_noforwardsecrecy">Cipher suite key exchange technique doesn\'t support forward secrecy.</string>
+    
     <string name="advanced_pref_screen_title">Advanced</string>
 
     <string name="mitm_server_pref_category_title">MiTM controller</string>
