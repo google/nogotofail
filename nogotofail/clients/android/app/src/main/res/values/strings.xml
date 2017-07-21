@@ -94,6 +94,8 @@
     <string name="vuln_sslstrip">Downgrade of HTTPS to HTTP</string>
     <!-- Vulnerability: XMPP STARTTLS strip -->
     <string name="vuln_xmppstarttlsstrip">Downgrade of STARTTLS-protected XMPP to cleartext</string>
+    <!-- Vulnerability: Certificate uses SHA-1 and expires after a Chrome sunset date -->
+    <string name="vuln_sunsetsha1">Certificate uses SHA-1 and expires after a Chrome sunset date</string>
 
     <string name="notifications_pref_screen_title">Notifications</string>
     <string name="vuln_notifications_enabled_pref_title">Notifications</string>
@@ -159,6 +161,8 @@
     <string name="attack_summary_xmppauthdetection">XMPP credentials/auth token compromise</string>
     <string name="attack_title_xmppstarttlsstrip">XMPP STARTTLS strip</string>
     <string name="attack_summary_xmppstarttlsstrip">Downgrade of STARTTLS-protected XMPP to cleartext</string>
+    <string name="attack_title_sunsetsha1">Certificate uses SHA-1 and expires after sunset date</string>
+    <string name="attack_summary_sunsetsha1">Certificate uses SHA-1 and expires after a Chrome sunset date</string>
 
     <string name="advanced_pref_screen_title">Advanced</string>
 

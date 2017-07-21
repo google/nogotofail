@@ -19,7 +19,12 @@ from nogotofail.mitm.connection.handlers.data import handlers
 from nogotofail.mitm.connection.handlers.data import DataHandler
 from nogotofail.mitm.connection.handlers.store import handler
 from nogotofail.mitm.event import connection
+from nogotofail.mitm import util
 from nogotofail.mitm.util import ssl2, tls, vuln
+from nogotofail.mitm.util.tls.types import HandshakeMessage
+from datetime import datetime
+import OpenSSL.crypto
+
 
 class _TlsRecordHandler(DataHandler):
     """Base class for a handler that acts on TlsRecords in a Tls connection.
@@ -172,3 +177,110 @@ class WeakTLSVersionDetectionHandler(DataHandler):
                 self.log(logging.ERROR,
                         "Client enabled SSLv3 protocol without TLS_FALLBACK_SCSV")
             self.log_attack_event(data="SSLv3")
+
+
+@handler.passive(handlers)
+class SunsetSHA1(_TlsRecordHandler):
+    name = "sunsetsha1"
+    description = (
+        "Detects TLS certificates using the SHA-1 signature algorithm that "
+        "expire during of after the Google Chrome sunset period.")
+
+    # Certificate type constants
+    LEAF_CERT = 1
+    INTERMEDIATE_CERT = 2
+
+    def on_tls_response(self, record):
+        CRT_DATE_FORMAT = "%Y%m%d%H%M%SZ"
+        try:
+            for i, message in enumerate(record.messages):
+                # Check for Certificate message
+                if (isinstance(message, tls.types.HandshakeMessage) and
+                        message.type == HandshakeMessage.TYPE.CERTIFICATE):
+                    certificate = message.obj
+                    crt_chain_length = len(certificate.certificates)
+                    crt_chain_index = 0
+                    # Loop through certificate chain starting from the leaf
+                    # cert to the last intermediate cert (before the root).
+                    for crt_byte_string in certificate.certificates[
+                            :crt_chain_length-1]:
+                        if (crt_chain_index == 0):
+                            crt_type = self.LEAF_CERT
+                        else:
+                            crt_type = self.INTERMEDIATE_CERT
+                        a_cert = OpenSSL.crypto.load_certificate(
+                            OpenSSL.crypto.FILETYPE_ASN1, crt_byte_string)
+                        # Check certificates in chain for SHA-1 sunset issue
+                        crt_signature_algorithm = \
+                            a_cert.get_signature_algorithm()
+                        if ("sha1" in crt_signature_algorithm):
+                            crt_CN = a_cert.get_subject().CN
+                            crt_not_before = a_cert.get_notBefore()
+                            crt_not_after = a_cert.get_notAfter()
+                            debug_message = \
+                                ["Certicate using SHA-1 with attributes ",
+                                 "- CN \"", crt_CN, "\", notBefore \"",
+                                 str(crt_not_before or ''),
+                                 "\", notAfter \"", str(crt_not_after or ''),
+                                 "\", signature_algorithm \"",
+                                 str(crt_signature_algorithm or ''), "\""]
+                            self.log(logging.DEBUG, "".join(debug_message))
+                            crt_not_after = datetime.strptime(crt_not_after,
+                                                        CRT_DATE_FORMAT)
+                            self._alert_on_sunset_sha1(crt_not_after, crt_CN,
+                                                       crt_type)
+                        crt_chain_index += 1
+        except AttributeError:
+            pass
+        return record.to_bytes()
+
+    def _alert_on_sunset_sha1(self, crt_not_after, crt_CN, crt_type):
+        """ Raises an alert if a certificate signature algorithm uses SHA-1 and
+            it expires during or after the Google Chrome sunset period.
+        """
+        # SHA-1 sunset dates based on Google Chrome dates published dates. See
+        # http://googleonlinesecurity.blogspot.com/2014/09/gradually-sunsetting-sha-1.html
+        logging_level = logging.WARNING
+        CRT_DATE_FORMAT = "%d-%m-%Y"
+        sunset_critical_date = datetime.strptime("31-12-2016", CRT_DATE_FORMAT)
+        sunset_error_date = datetime.strptime("30-06-2016", CRT_DATE_FORMAT)
+        sunset_warning_date = datetime.strptime("31-12-2015", CRT_DATE_FORMAT)
+
+        if (crt_type == self.LEAF_CERT):
+            crt_type_name = "Leaf"
+        elif (crt_type == self.INTERMEDIATE_CERT):
+            crt_type_name = "Intermediate"
+
+        if (crt_not_after > sunset_critical_date):
+            if (crt_type == self.LEAF_CERT):
+                logging_level = logging.CRITICAL
+            elif (crt_type == self.INTERMEDIATE_CERT):
+                logging_level = logging.WARNING
+            log_message = \
+                [crt_type_name, " certificate with CN ", crt_CN,
+                 " uses SHA-1 and expires after 31 Dec 2016"]
+            self.log(logging_level, "".join(log_message))
+            self.log_event(logging_level, connection.AttackEvent(
+                           self.connection, self.name, True, ""))
+            self.connection.vuln_notify(util.vuln.VULN_SUNSET_SHA1)
+        elif (crt_not_after > sunset_error_date):
+            if (crt_type == self.LEAF_CERT):
+                logging_level = logging.ERROR
+            elif (crt_type == self.INTERMEDIATE_CERT):
+                logging_level = logging.WARNING
+            log_message = \
+                [crt_type_name, " certificate with CN ",  crt_CN,
+                 " uses SHA-1 and expires after 30 Jun 2016"]
+            self.log(logging_level, "".join(log_message))
+            self.log_event(logging_level, connection.AttackEvent(
+                           self.connection, self.name, True, ""))
+            self.connection.vuln_notify(util.vuln.VULN_SUNSET_SHA1)
+        elif (crt_not_after > sunset_warning_date):
+            logging_level = logging.WARNING
+            log_message = \
+                [crt_type_name, " certificate with CN ", crt_CN,
+                 " uses SHA-1 and expires after 31 Dec 2015"]
+            self.log(logging_level, "".join(log_message))
+            self.log_event(logging_level, connection.AttackEvent(
+                           self.connection, self.name, True, ""))
+            self.connection.vuln_notify(util.vuln.VULN_SUNSET_SHA1)
