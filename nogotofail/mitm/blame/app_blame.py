@@ -26,6 +26,11 @@ from nogotofail.mitm.connection import handlers
 from nogotofail.mitm.connection.handlers import preconditions
 from nogotofail.mitm.util import close_quietly
 
+try:
+    unicode        # Python 2
+except NameError:
+    unicode = str  # Python 3
+
 Application = namedtuple("Application", ["package", "version"])
 
 
