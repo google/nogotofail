@@ -24,6 +24,10 @@ try:
 except ImportError:
     import ConfigParser as configparser
 import logging
+try:
+    xrange          # Python 2
+except NameError:
+    xrange = range  # Python 3
 
 logger = logging.getLogger("pyblame")
 config = None
@@ -150,6 +154,7 @@ def client_info_callback(source_port, dest_ip, dest_port):
                 % (source_port, dest_ip, dest_port))
 
     return None
+
 def main():
     args = parse_args()
     global config
@@ -198,7 +203,7 @@ def run(blame_connection, args):
     blame_connection.handshake()
     if args.list:
         for header, value in blame_connection.resp_headers.iteritems():
-            print "%s: %s" % (header, value)
+            print("%s: %s" % (header, value))
         pass
     if args.quit:
         return
