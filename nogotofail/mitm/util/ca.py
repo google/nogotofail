@@ -15,6 +15,8 @@ limitations under the License.
 '''
 import tempfile
 import OpenSSL.crypto
+import atexit
+import shutil
 import os
 import random
 from nogotofail.mitm.util import extras
@@ -22,8 +24,11 @@ from nogotofail.mitm.util import extras
 class CertificateAuthority(object):
     """Simple CA for generating certs based on CNs and sans."""
 
-    def __init__(self, ca_file='ca.pem', cert_dir=tempfile.gettempdir()):
+    def __init__(self, ca_file='ca.pem', cert_dir=None):
         self.ca_file = ca_file
+        if cert_dir is None:
+            cert_dir = tempfile.mkdtemp(prefix="ngtf_ca_" + ca_file)
+            atexit.register(shutil.rmtree, cert_dir)
         self.cert_dir = cert_dir
         self._loaded = False
 
@@ -45,8 +50,8 @@ class CertificateAuthority(object):
         self.cert.set_version(2)
         self.cert.set_serial_number(1)
         self.cert.get_subject().CN = 'ca.nogotofail'
-        self.cert.set_notBefore("19300101000000+0000")
-        self.cert.set_notAfter("203012310000+0000")
+        cert.set_notBefore("20200101000000Z")
+        cert.set_notAfter("20210101000000Z")
         self.cert.set_issuer(self.cert.get_subject())
         self.cert.set_pubkey(self.key)
         self.cert.add_extensions([
@@ -63,7 +68,7 @@ class CertificateAuthority(object):
                 False,
                 'hash',
                 subject=self.cert)])
-        self.cert.sign(self.key, 'sha1')
+        self.cert.sign(self.key, 'sha256')
 
         with open(self.ca_file, 'w') as f:
             f.write(
@@ -94,12 +99,12 @@ class CertificateAuthority(object):
         cert.set_pubkey(key)
         cert.set_serial_number(random.randint(0, 2**20))
         # Use a huge range so we dont have to worry about bad clocks
-        cert.set_notBefore("19300101000000+0000")
-        cert.set_notAfter("203012310000+0000")
+        cert.set_notBefore("20200101000000Z")
+        cert.set_notAfter("20210101000000Z")
         cert.set_issuer(self.cert.get_subject())
         if san:
             cert.add_extensions([san])
-        cert.sign(self.key, 'sha1')
+        cert.sign(self.key, 'sha256')
 
         with open(path, 'w') as f:
             f.write(

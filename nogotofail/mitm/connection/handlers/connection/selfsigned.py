@@ -93,3 +93,11 @@ class SuperFishMITM(SelfSignedMITM):
     description = "Attempt a MiTM using the compromised superfish MITM CA"
     ca = util.CertificateAuthority("superfish.pem")
     vuln = util.vuln.VULN_TLS_SUPERFISH_TRUSTED
+
+@handler(handlers, default=True)
+@preconditions.requires_files(files=["explicit_curve.pem"])
+class ExplicitCurveMiTM(SelfSignedMITM):
+    name = "explicitcurvemitm"
+    description = "Attempt a MiTM exploiting CVE-2020-0601"
+    ca = util.CertificateAuthority("explicit_curve.pem")
+    vuln = util.vuln.VULN_TLS_EXPLICIT_CURVE

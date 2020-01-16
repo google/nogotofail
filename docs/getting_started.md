@@ -1,10 +1,10 @@
-#Getting Started
-##Files you’ll need to provide
+# Getting Started
+## Files you’ll need to provide
 
 
 Before running nogotofail there are some files you’ll need to create or provide.
 
-###MiTM Server certificate
+### MiTM Server certificate
 
 
 The connection between clients and the MiTM is protected by a self-signed
@@ -16,12 +16,12 @@ For example the OpenSSL command to generate such a certificate is:
 
     $ openssl req -x509 -newkey rsa:2048 -sha256 -subj "/CN=mitm.nogotofail/" -nodes -keyout server.crt -out server.crt
 
-###Invalid Hostname Certificate
+### Invalid Hostname Certificate
 
 The Invalid hostname attack attempts a MiTM by presenting a trusted certificate
 for another domain name. For example a trusted certificate for evil.com being
 presented for a connection to example.com. If the application does not do
-hostname verification correctly it will incorrect trust the MiTM. This has
+hostname verification correctly, it will incorrectly trust the MiTM. This has
 historically been one of the common SSL issues besides not checking chain of
 trust of SSL certificates.  To test for this issue you will need to provide a
 trusted certificate chain for an arbitrary domain. You have two options for how
@@ -44,13 +44,13 @@ To verify the chain is correct
     $ openssl verify -CApath /etc/ssl/certs/ -untrusted trusted-cert.pem trusted-cert.pem
 You should see OK as the output.
 
-###ImageReplace Image
+### ImageReplace Image
 
 If you decide to use the image replacement data attack you’ll need to provide an image to
 replace with in the form of replace.png in nogotofail.mitm’s working directory.
 We recommend something noticeable that scales well.
 
-##Example Walkthrough
+## Example Walkthrough
 
 
 Here is a quick walkthrough of running and testing the MiTM locally.
@@ -171,7 +171,7 @@ attack for later analysis.
 6. The connection closes
 
 
-###Getting on path
+### Getting on path
 
 
 Now that you’ve set up nogotofail and seen how it runs the next step is to put
@@ -199,7 +199,7 @@ OpenVPN as there is lots of documentation for how to set up an OpenVPN server.
 Our main setup has been OpenVPN running on a Google Compute Engine instance. See instructions in
 [gce/readme.md](gce/readme.md).
 
-####Testing Android
+#### Testing Android
 For testing Android devices we have included our [Android client](/nogotofail/clients/android) ready
 to be imported into Eclipse. You will have to build the app and install it on your test device.
 
@@ -207,7 +207,7 @@ For testing you can use the access point nogotofail setups or on  devices >=JB y
 the OpenVPN setup and a third party VPN application to route your traffic.
 
 
-#####Getting on path on a Linux machine
+##### Getting on path on a Linux machine
 On a Linux machine with the following example topology:
 
 
@@ -237,7 +237,7 @@ Now traffic will be flowing through the MiTM box from the test device to the
 Internet.
 
 
-###Now you’re on path
+### Now you’re on path
 
 
 By default clients connect to the MiTM using hostname mitm.nogotofail
@@ -255,7 +255,7 @@ in [example.conf](example.conf), and run it with `python -m nogotofail.mitm -c <
 If you’re running in an iptables mode you’ll also need to run nogotofail.mitm as
 root so it can set up the routing rules to intercept traffic.
 
-####Useful arguments
+#### Useful arguments
 
 
 
@@ -286,7 +286,7 @@ important ones you’ll want to tweak.
 
  You can see all the options by running `python -m nogotofail.mitm --help`.
 
-#####Logging
+##### Logging
 
 
 Additionally, you will probably want to log to files in addition to stdout.

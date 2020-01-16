@@ -76,7 +76,7 @@ class Client(object):
 
     def check_timeouts(self):
         """Returns if the connection or any of its callbacks have timed out."""
-        now = time.time
+        now = time.time()
         if now - self.last_used > self.CLIENT_TIMEOUT:
             return False
         for callback in self.queries.values():
@@ -141,7 +141,7 @@ class Client(object):
         def on_vuln_notify(success, data=None):
             if not success:
                 callback(False)
-                self.server.remove_client(self.address)
+                self.server.remove_client(self)
                 return
             callback(True, data == "OK")
         return on_vuln_notify
@@ -150,7 +150,7 @@ class Client(object):
         def on_get_applications(success, data=None):
             if not success:
                 callback(False)
-                self.server.remove_client(self.address)
+                self.server.remove_client(self)
                 return
 
             platform_info = self.info.get(
@@ -323,6 +323,7 @@ class Server:
         self.fd_map = {}
         self.logger = logging.getLogger("nogotofail.mitm")
         self.server_socket = None
+        self.last_prune = time.time()
 
     def start_listening(self):
         self.server_socket = socket.socket()
@@ -349,18 +350,18 @@ class Server:
 
         old_client = self.clients.get(client_addr, None)
         if old_client:
-            self.remove_client(client_address)
-        self.fd_map[client_socket] = client_addr
-        self.clients[client_addr] = Client(client_socket, self)
+            self.remove_client(old_client)
+        client = Client(client_socket, self)
+        self.fd_map[client_socket] = client
+        self.clients[client_addr] = client
 
     def _on_socket_select(self, sock):
         if sock is self.server_socket:
             self._on_server_socket_select()
             return
-        client_addr = self.fd_map[sock]
-        client = self.clients[client_addr]
+        client = self.fd_map[sock]
         if not client.on_select():
-            self.remove_client(client_addr)
+            self.remove_client(client)
 
     def client_available(self, client_addr):
         """Returns if the app blame client is running on client_addr.
@@ -388,7 +389,7 @@ class Server:
             return False
         if not self.clients[client_addr].get_applications_async(client_port,
                 server_addr, server_port, callback, timeout):
-            self.remove_client(client_addr)
+            self.remove_client(self.clients[client_addr])
             return False
         return True
 
@@ -416,24 +417,24 @@ class Server:
         result = self.clients[client_addr].vuln_notify_async(server_addr, server_port,
                 id, type, applications, callback, timeout)
         if not result:
-            self.remove_client(client_addr)
+            self.remove_client(self.clients[client_addr])
         return result
 
-    def remove_client(self, client_addr):
+    def remove_client(self, client):
         """Remove and close a blame client."""
-        if client_addr not in self.clients:
+        if client.address not in self.clients:
             return
-        client = self.clients[client_addr]
-        del self.clients[client_addr]
+        del self.clients[client.address]
         del self.fd_map[client.socket]
         client.close()
 
-    def check_timeouts(self):
-        """Check the timeouts on all clients and remove those that have timed out."""
-        for client_addr in self.clients.keys():
-            if not self.clients[client_addr].check_timeouts():
-                self.logger.info("Blame: Client %s timed out", client_addr)
-                self.remove_client(client_addr)
+    def prune_old_clients(self):
+        """Prune old clients that have not been heard from in a long time"""
+        for client in self.clients.values():
+            if not client.check_timeouts():
+                self.logger.info("Blame: Client %s timed out", client.address)
+                self.remove_client(client)
+
 
     @property
     def select_fds(self):
@@ -446,6 +447,10 @@ class Server:
         provided by select_fds."""
         for fd in set(r + w + x):
             self._on_socket_select(fd)
+        # Prune old clients
+        if time.time() - self.last_prune > 3600:
+            self.prune_old_clients()
+            self.last_prune = time.time()
 
     def shutdown(self):
         """Shutdown the Blame server. The server should not be used after this point."""

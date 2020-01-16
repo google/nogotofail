@@ -18,6 +18,7 @@ from nogotofail.mitm import util
 from nogotofail.mitm.connection.handlers.connection import LoggingHandler
 from nogotofail.mitm.connection.handlers.connection import handlers
 from nogotofail.mitm.connection.handlers.store import handler
+from nogotofail.mitm.util.tls import tls
 from nogotofail.mitm.util.tls.types import Alert, Extension, HandshakeMessage, OpaqueMessage, TlsRecord
 from nogotofail.mitm.event import connection
 
@@ -56,7 +57,7 @@ class ServerKeyReplacementMITM(LoggingHandler):
         if not self.ssl:
             return request
         try:
-            record, size = TlsRecord.from_stream(request)
+            record, remaining = tls.parse_tls(request)
             message = record.messages[0]
             if not self.clienthello_adjusted:
                 self.clienthello_adjusted = True
@@ -68,7 +69,7 @@ class ServerKeyReplacementMITM(LoggingHandler):
                     if ext.type == Extension.TYPE.SESSIONTICKET:
                         ext.raw_data = []
                 # Retain in ClientHello only cipher suites which require the
-                # server to send a ServerKeyExchange message: emphemeral (EC)DH
+                # server to send a ServerKeyExchange message: ephemeral (EC)DH
                 # and RSA_EXPORT cipher suites. Also retain pseudo/signalling
                 # cipher suites because they don't affect this attack/test.
                 hello.ciphers = [c for c in hello.ciphers
@@ -124,9 +125,10 @@ class ServerKeyReplacementMITM(LoggingHandler):
         self.buffer = ""
         # Tamper with the ServerKeyExchange message.
         try:
-            index = 0
-            while index < len(response):
-                record, size = TlsRecord.from_stream(response[index:])
+            remaining = response
+            new_response = ""
+            while remaining:
+                record, remaining = tls.parse_tls(remaining, throw_on_incomplete=True)
                 version = record.version
                 for i, message in enumerate(record.messages):
                     if (isinstance(message, HandshakeMessage)
@@ -134,15 +136,14 @@ class ServerKeyReplacementMITM(LoggingHandler):
                             HandshakeMessage.TYPE.SERVER_KEY_EXCHANGE)):
                         tampered_record_bytes = (
                             self._tamper_with_server_key_exchange(record, i))
-                        response = (response[:index] +
+                        response = (new_response +
                             tampered_record_bytes +
-                            response[index+size:])
+                            remaining)
                         self.signature_tampered = True
                         return response
+                new_response += record.to_bytes()
 
-                index += size
-
-        except ValueError:
+        except tls.types.TlsNotEnoughDataError:
             # Failed to parse TLS, this is probably due to a short read of a TLS
             # record. Buffer the response to try and get more data.
             self.buffer = response

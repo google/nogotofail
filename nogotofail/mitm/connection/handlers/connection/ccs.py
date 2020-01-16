@@ -42,7 +42,7 @@ class EarlyCCS(LoggingHandler):
         if not self.ssl or self.bridge:
             return request
         try:
-            record, size = TlsRecord.from_stream(request)
+            record, remaining = tls.parse_tls(request)
             message = record.messages[0]
             if not self.clienthello_handled:
                 self.clienthello_handled = True
