@@ -96,7 +96,7 @@ class SuperFishMITM(SelfSignedMITM):
 
 @handler(handlers, default=True)
 @preconditions.requires_files(files=["explicit_curve.pem"])
-class SuperFishMITM(SelfSignedMITM):
+class ExplicitCurveMiTM(SelfSignedMITM):
     name = "explicitcurvemitm"
     description = "Attempt a MiTM exploiting CVE-2020-0601"
     ca = util.CertificateAuthority("explicit_curve.pem")
