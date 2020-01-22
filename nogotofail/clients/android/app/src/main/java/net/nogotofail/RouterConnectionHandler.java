@@ -99,6 +99,9 @@ public class RouterConnectionHandler implements RouterSocketClient.ConnectionHan
   private static final String HEADER_SUPPORTED_DATA_ATTACKS = "Supported-Data-Attacks";
   private static final String HEADER_SUPPORTED_DATA_ATTACKS_LOWER_CASE =
       HEADER_SUPPORTED_DATA_ATTACKS.toLowerCase(Locale.US);
+  // Client PII header strings
+  private static final String HEADER_PII_ITEMS = "PII-Items";
+  private static final String HEADER_PII_LOCATION = "PII-Location";
 
   /**
    * Timeout (milliseconds) for a read operation waiting for a command from the server. The server
@@ -169,6 +172,18 @@ public class RouterConnectionHandler implements RouterSocketClient.ConnectionHan
       if (requestedEnabledDataAttackIds != null) {
         writeHandshakeRequestHeader(
             out, HEADER_ENABLED_DATA_ATTACKS, TextUtils.join(",", requestedEnabledDataAttackIds));
+      }
+      Set <String> requestedPersonalItems =
+              AttacksPreferenceFragment.getPersonalItems(mContext);
+      if (requestedPersonalItems != null) {
+        writeHandshakeRequestHeader(
+                out, HEADER_PII_ITEMS, "{" + TextUtils.join(",", requestedPersonalItems) + "}");
+      }
+      Set <String> requestedPersonalLocation =
+              AttacksPreferenceFragment.getDeviceLocation(mContext);
+      if (requestedPersonalLocation != null) {
+        writeHandshakeRequestHeader(
+                out, HEADER_PII_LOCATION, "{" + TextUtils.join(",", requestedPersonalLocation) + "}");
       }
       out.write("\r\n");
       out.flush();
