@@ -42,7 +42,6 @@ setup(
     description='TLS/SSL network security testing tool',
     long_description=long_description,
     author='Google Inc.',
-    author_email='',
     license='Apache License 2.0',
     url='https://github.com/google/nogotofail',
 
