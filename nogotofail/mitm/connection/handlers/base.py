@@ -101,6 +101,24 @@ class BaseHandler(object):
         """
         pass
 
+    def peek_request(self, request):
+        """Called with the data from a request _before_ it has been read from the socket.
+
+        This can be used to prempt the socket recv and handle data yourself.
+
+        Returns if the request should be considered handled and recv should not be called on the underlying socket
+        """
+        return False
+
+    def peek_response(self, response):
+        """Called with the data from a response _before_ it has been read from the socket.
+
+        This can be used to prempt the socket recv and handle data yourself.
+
+        Returns if the response should be considered handled and recv should not be called on the underlying socket
+        """
+        return False
+
 
 class BaseConnectionHandler(BaseHandler):
 

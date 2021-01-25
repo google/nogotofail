@@ -28,35 +28,81 @@ import errno
 import os
 
 class ConnectionWrapper(object):
-    """Wrapper around OpenSSL's Connection object to make recv act like socket.recv()
+    """Wrapper around OpenSSL's Connection object to make it act like a real socket.
     """
 
     def __init__(self, connection):
         self._connection = connection
+        self.buffer = ""
+        self._is_short_send = False
 
     def __getattr__(self, name):
         return getattr(self._connection, name)
 
-    def recv(self, size):
+    def recv(self, size, flags=0):
         """Wrapper around pyOpenSSL's Connection.recv
         PyOpenSSL doesn't return "" on error like socket.recv does,
         instead it throws a SSL.ZeroReturnError or (-1, "Unexpected EOF") erorrs.
 
         Wrap recv so we don't have to deal with that noise.
         """
-        buf = ""
+        if flags & socket.MSG_PEEK == 0:
+            return self._recv(size)
+        if len(self.buffer) >= size:
+            return self.buffer[:size]
         try:
-            buf = self._connection.recv(size)
+            self.buffer += self._recv(size - len(self.buffer))
+        except SSL.WantReadError:
+            pass
+        return self.buffer[:size]
+
+    def _recv(self, size):
+        if size <= len(self.buffer):
+            out = self.buffer[:size]
+            self.buffer = self.buffer[size:]
+            return out
+        buf = self.buffer
+        size -= len(buf)
+        try:
+            buf += self._connection.recv(size)
         except SSL.SysCallError as e:
             if e.args != (-1, "Unexpected EOF"):
                 raise e
         except SSL.ZeroReturnError:
             pass
+        except SSL.WantReadError as e:
+            # Rethrow the WantRead if we really have no data
+            if not buf:
+                raise e
         except SSL.Error as e:
             if e.args != (-1, "Unexpected EOF"):
                 raise e
+        self.buffer = ""
         return buf
 
+    def send(self, string):
+        sent = self._connection.send(string)
+        # Track short send state for our awful fileno hacks
+        self._is_short_send = sent != len(string)
+        return sent
+
+    _always_read_fd = None
+    def always_read_fd(self):
+        """Return an fd that is always ready for read when passed to select.select. See fileno for why this is needed."""
+        if ConnectionWrapper._always_read_fd:
+            return ConnectionWrapper._always_read_fd
+        ConnectionWrapper._always_read_fd = open("/dev/zero")
+        return ConnectionWrapper._always_read_fd
+
+    def fileno(self):
+        # _AWFUL_ HACK to support MSG_PEEK without breaking select.select.
+        # If we read data with a peeking recv then return a fd that is always selectable on read to make sure the connection keeps flowing.
+        # Note that if the conneciton is handling a short send then we're only waiting for write not read, so use the underlying connection.
+        # Once the backlog is sent the connection will start trying to read again and we'll return the always_read_fd.
+        if self.buffer and not self._is_short_send:
+            return self.always_read_fd().fileno()
+
+        return self._connection.fileno()
 
 def stub_verify(conn, cert, errno, errdepth, code):
     """We don't verify the server when we attempt a MiTM.
@@ -360,7 +406,7 @@ class BaseConnection(object):
         Returns if client_request was used(and should not be sent to the server)
         """
         # check for a TLS Client Hello
-        record = tls.parse_tls(client_request)
+        record, ignored = tls.parse_tls(client_request)
         client_hello = None
         if record:
             first = record.messages[0]
@@ -411,17 +457,20 @@ class BaseConnection(object):
 
     def _bridge_client(self):
         try:
-            # Check for a TLS client hello we might need to intercept
-            if not self.ssl:
-                client_request = self.client_socket.recv(65536, socket.MSG_PEEK)
-                if not client_request:
-                    return False
-                # If a MiTM was attempted discard client_request, we used it
-                # for establishing a MiTM with the client.
-                if self._check_for_ssl(client_request):
-                    return not self.closed
-
             try:
+                client_request = self.client_socket.recv(65536, socket.MSG_PEEK)
+                handled = self.handler.peek_request(client_request)
+                if handled:
+                    return not self.closed
+                for handler in self.data_handlers:
+                    if handler.peek_request(client_request):
+                        return not self.closed
+                # Check for a TLS client hello we might need to intercept
+                if not self.ssl:
+                    # If a MiTM was attempted discard client_request, we used it
+                    # for establishing a MiTM with the client.
+                    if self._check_for_ssl(client_request):
+                        return not self.closed
                 client_request = self.client_socket.recv(65536)
             except (socket.error, SSL.WantReadError):
                 # recv can still time out even if select returned this socket
@@ -456,6 +505,13 @@ class BaseConnection(object):
     def _bridge_server(self):
         try:
             try:
+                server_response = self.server_socket.recv(65536, socket.MSG_PEEK)
+                handled = self.handler.peek_response(server_response)
+                if handled:
+                    return not self.closed
+                for handler in self.data_handlers:
+                    if handler.peek_response(server_response):
+                        return not self.closed
                 server_response = self.server_socket.recv(65536)
             except (socket.error, SSL.WantReadError):
                 # recv can still time out even if select returned this socket
@@ -605,6 +661,35 @@ class BaseConnection(object):
                 break
         self.client_socket.sendall(response)
 
+class ReverseProxyConnection(BaseConnection):
+    """Connection based on reverse proxy"""
+
+    def start(self):
+        """Setup the remote end of the connection and client connection
+        to be ready to start bridging traffic.
+
+        This method should be implemented based on how connections are routed to nogotofail.mitm
+        such as iptables redirect or proxies.
+
+        This should call handler.on_select and handler.on_establish when appropriate
+        and set server_addr and server_port to the remote endpoint's address."""
+        self.server_addr, self.server_port = ReverseProxyConnection.target_addr, ReverseProxyConnection.target_port
+
+        self.handler.on_select()
+        for handler in self.data_handlers:
+            handler.on_select()
+        try:
+            self._start_server_connect_nonblocking()
+        except socket.error:
+            return False
+        return True
+
+    def _get_client_remote_name(self):
+        """Get the addr, port of the what the client thinks is their remote
+        This is used for blame, so this should correspond to some tcp connection
+        on the client"""
+        return self.client_socket.getsockname()[:2]
+
 class RedirectConnection(BaseConnection):
     """Connection based on getting traffic from iptables redirect rules"""
 
@@ -634,13 +719,16 @@ class RedirectConnection(BaseConnection):
         return True
 
     def _get_original_dest(self, sock):
+        family = sock.family
         SO_ORIGINAL_DST = 80
-        dst = sock.getsockopt(socket.SOL_IP, SO_ORIGINAL_DST, 28)
-        family = struct.unpack_from("H", dst)[0]
         # Parse the raw_ip and raw port from the struct sockaddr_in/in6
         if family == socket.AF_INET:
+            dst = sock.getsockopt(socket.SOL_IP, SO_ORIGINAL_DST, 28)
             raw_port, raw_ip = struct.unpack_from("!2xH4s", dst)
         elif family == socket.AF_INET6:
+            # From socket.h
+            SOL_IPV6 = 41
+            dst = sock.getsockopt(SOL_IPV6, SO_ORIGINAL_DST, 64)
             raw_port, raw_ip = struct.unpack_from("!2xH4x16s", dst)
         else:
             raise ValueError("Unsupported sa_family_t %d" % family)

@@ -1,4 +1,4 @@
-#Nogotofail MiTM on Google Compute Engine VM instance
+# Nogotofail MiTM on Google Compute Engine VM instance
 
 ## Overview
 In this setup, traffic from clients to be MiTM'd is routed through a Google

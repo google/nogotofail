@@ -3,8 +3,7 @@ proto udp
 client
 verb 4
 dev tun
-tun-ipv6
-redirect-gateway
+redirect-gateway ipv6
 
 # keepalive 60 120
 ping 60
@@ -14,3 +13,10 @@ persist-tun
 persist-key
 
 comp-lzo
+
+# Accept only server certificates which are whitelisted (via Key Usage and Extended Key Usage) for
+# server authentication
+remote-cert-tls server
+
+# Symmetric tunnel crypto config
+cipher AES-128-GCM
